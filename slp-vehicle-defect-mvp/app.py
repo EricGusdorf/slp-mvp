@@ -254,7 +254,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-            # --- Map ---
+               # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
             st.warning(
@@ -301,8 +301,8 @@ if "vehicle" in st.session_state:
             st.dataframe(
                 counts.sort_values("count", ascending=False).head(25),
                 use_container_width=True,
-                hide_in_
-
+                hide_index=True,
+            )
 
     # --- Trends ---
     with tabs[3]:
