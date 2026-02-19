@@ -109,7 +109,7 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 0.5rem;
     ">
-        SLP Vehicle Defect MVP
+        Strategic Legal Practices | Vehicle Defect Assessment Tool
     </div>
     """,
     unsafe_allow_html=True,
