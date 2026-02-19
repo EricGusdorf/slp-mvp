@@ -254,7 +254,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-    # --- Map ---
+        # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
             st.warning(
@@ -262,7 +262,13 @@ if "vehicle" in st.session_state:
             )
         else:
             geo = complaints_df.dropna(subset=["stateAbbreviation"]).copy()
-            counts = geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
+            counts = (
+                geo["stateAbbreviation"]
+                .value_counts()
+                .rename_axis("state")
+                .reset_index(name="count")
+            )
+
             fig = px.choropleth(
                 counts,
                 locations="state",
@@ -271,9 +277,33 @@ if "vehicle" in st.session_state:
                 scope="usa",
                 title="Complaints by state (from NHTSA consumer location)",
             )
-            fig.update_layout(height=500, margin=dict(l=10, r=10, t=50, b=10))
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(counts.sort_values("count", ascending=False).head(25), use_container_width=True, hide_index=True)
+
+            fig.update_layout(
+                height=500,
+                margin=dict(l=10, r=10, t=50, b=10),
+                dragmode=False,
+            )
+
+            fig.update_geos(
+                fitbounds=False,
+                visible=False,
+                projection_scale=1,
+                center=dict(lat=39.5, lon=-98.35),
+            )
+
+            config = {
+                "scrollZoom": False,
+                "displayModeBar": False,
+                "doubleClick": False,
+            }
+
+            st.plotly_chart(fig, use_container_width=True, config=config)
+            st.dataframe(
+                counts.sort_values("count", ascending=False).head(25),
+                use_container_width=True,
+                hide_index=True,
+            )
+
 
     # --- Trends ---
     with tabs[3]:
