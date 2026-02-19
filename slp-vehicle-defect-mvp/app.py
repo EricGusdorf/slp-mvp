@@ -72,6 +72,7 @@ def vp_get_all_makes() -> list[str]:
             "Volvo",
         ]
 
+        # Match case-insensitively against vPIC results, but return the vPIC spelling
         makes_by_lower = {m.lower(): m for m in makes}
         common_present = [makes_by_lower[c.lower()] for c in common if c.lower() in makes_by_lower]
 
@@ -141,27 +142,25 @@ with st.sidebar:
             step=1,
         )
 
-        all_makes = vp_get_all_makes()
+        makes = vp_get_all_makes()
 
-        make_query = st.text_input("Filter make", value="", placeholder="Type to filter (e.g., tesla)")
-        if make_query.strip():
-            q = make_query.strip().lower()
-            makes = [m for m in all_makes if m.lower().startswith(q)]
-        else:
-            makes = all_makes
+        if "make_index" not in st.session_state:
+            st.session_state.make_index = 0
 
-        make = st.selectbox("Make", options=[""] + makes, index=0)
+        make = st.selectbox(
+            "Make",
+            options=[""] + makes,
+            index=st.session_state.make_index,
+            key="make_selectbox",
+        )
+
+        # Persist selected index
+        if make != "":
+            st.session_state.make_index = ([""] + makes).index(make)
 
         models: list[str] = []
         if make:
-            all_models = vp_get_models_for_make_year(make, int(year))
-
-            model_query = st.text_input("Filter model", value="", placeholder="Type to filter (e.g., model)")
-            if model_query.strip():
-                mq = model_query.strip().lower()
-                models = [m for m in all_models if m.lower().startswith(mq)]
-            else:
-                models = all_models
+            models = vp_get_models_for_make_year(make, int(year))
 
         model = st.selectbox("Model", options=[""] + models, index=0, disabled=(not make))
 
@@ -230,6 +229,8 @@ if analyze_clicked:
 
         v = st.session_state["vehicle"]
 
+        # Fetch: handle per-endpoint errors so we can distinguish
+        # "invalid vehicle" (empty data) vs "NHTSA unavailable" (errors).
         with st.spinner("Fetching NHTSA recalls + complaints..."):
             recalls = []
             complaints = []
@@ -246,6 +247,7 @@ if analyze_clicked:
             except NHTSAError as e:
                 complaints_err = str(e)
 
+        # If BOTH endpoints failed, show a service error (not an invalid vehicle).
         if recalls_err and complaints_err:
             st.error(
                 "NHTSA services are currently unavailable for this lookup. "
@@ -255,6 +257,7 @@ if analyze_clicked:
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
             st.stop()
 
+        # If requests succeeded but returned no data, treat as invalid vehicle.
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
             st.error(
                 f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
@@ -262,6 +265,7 @@ if analyze_clicked:
             )
             st.stop()
 
+        # Partial failure: continue with warning (minimal MVP).
         if recalls_err and not complaints_err:
             st.warning("Recalls lookup failed; showing complaints only.")
         if complaints_err and not recalls_err:
@@ -300,11 +304,12 @@ if "vehicle" in st.session_state:
     v = st.session_state["vehicle"]
     recalls_df = st.session_state.get("recalls_df", pd.DataFrame())
     complaints_df = st.session_state.get("complaints_df", pd.DataFrame())
+    enrich_stats = st.session_state.get("enrich_stats", {"requested": 0, "enriched": 0, "failed": 0})
 
     st.markdown(
         f"""
         <div style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem;">
-            {v['year']}
+            {v['year']} 
             <span style="color:#6b7280; font-weight:500;">
                 {v['make']} {v['model']}
             </span>
