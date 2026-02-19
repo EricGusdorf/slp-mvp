@@ -133,8 +133,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-)
-
 st.markdown(
     """
     <div style="
