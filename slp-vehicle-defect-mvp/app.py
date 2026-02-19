@@ -273,9 +273,9 @@ if analyze_clicked:
             st.stop()
 
         if recalls_err and not complaints_err:
-            st.warning("Recalls lookup failed; showing complaints only. Vehicle may not exist.")
+            st.warning("No recalls found; showing complaints only.")
         if complaints_err and not recalls_err:
-            st.warning("Complaints lookup failed; showing recalls only.")
+            st.warning("No complaints found; showing recalls only.")
 
         st.session_state["raw_recalls"] = recalls
         st.session_state["raw_complaints"] = complaints
