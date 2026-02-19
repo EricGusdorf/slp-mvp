@@ -218,17 +218,33 @@ st.markdown(
     /* ---- Streamlit DataFrame (Glide Data Grid) scrollbar always visible ---- */
     div[data-testid="stDataFrame"] .gdg-scrollbar,
     div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal,
-    div[data-testid="stDataFrame"] .gdg-scrollbar-vertical {
+    div[data-testid="stDataFrame"] .gdg-scrollbar-vertical,
+    div[data-testid*="stDataFrame"] [class*="gdg-scrollbar"] {
         opacity: 1 !important;
         transition: none !important;
     }
 
-    div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal {
+    div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal,
+    div[data-testid*="stDataFrame"] [class*="gdg-scrollbar-horizontal"] {
         height: 14px !important;
     }
 
-    div[data-testid="stDataFrame"] div[role="grid"] {
+    div[data-testid="stDataFrame"] div[role="grid"],
+    div[data-testid*="stDataFrame"] div[role="grid"] {
         overflow-x: auto !important;
+    }
+
+    /* Fallback (native scrollbars, if used by Streamlit version/browser) */
+    div[data-testid*="stDataFrame"] *::-webkit-scrollbar {
+        height: 14px;
+        width: 14px;
+    }
+    div[data-testid*="stDataFrame"] *::-webkit-scrollbar-thumb {
+        background: rgba(107, 114, 128, 0.55); /* gray-500-ish */
+        border-radius: 999px;
+    }
+    div[data-testid*="stDataFrame"] *::-webkit-scrollbar-track {
+        background: rgba(107, 114, 128, 0.15);
     }
 
     /* ---- Hide Streamlit header "link" (permalink) icons ---- */
@@ -687,7 +703,13 @@ if "analysis_vehicle" in st.session_state:
                         pd.to_datetime(recalls_display["ReportReceivedDate"], errors="coerce").dt.strftime("%m/%d/%Y")
                     )
 
-                st.dataframe(recalls_display.head(50), use_container_width=True, hide_index=True)
+                st.dataframe(
+                    recalls_display.head(50),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=360,
+                    key="recalls_table",
+                )
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
