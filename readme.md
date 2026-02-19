@@ -31,7 +31,7 @@ pip install -r requirements.txt
 
 ### 3) Run the app
 ```bash
-streamlit run app.py
+streamlit run slp-vehicle-defect-mvp/app.py
 ```
 
 The app will open in your browser (default `http://localhost:8501`).
@@ -41,12 +41,19 @@ The app will open in your browser (default `http://localhost:8501`).
 ## How to use
 
 1. Choose **VIN** or **Make / Model / Year** in the left sidebar.
-2. Click **Analyze vehicle**.
+2. (Make / Model / Year) If you can’t find the exact model name:
+   - Turn on **Show more models (Hybrid/EV/variants)**, or
+   - Use **Model not listed? Enter model manually** and type the exact model string (e.g., `Accord Hybrid`).
+3. Click **Analyze vehicle**.
 3. Explore the tabs:
    - **Summary**: defect patterns + recalls + a small complaints preview
    - **Search**: symptom text search within complaints
    - **Map**: complaints by state (requires enrichment)
    - **Trends**: complaints per month, optionally filtered by component
+
+Notes:
+- **Results only change after Analyze vehicle**: editing make/model/year won’t change the displayed results until you click **Analyze vehicle** again.
+- **Manual model override wins**: if you type a manual model, the dropdown is disabled and only the typed text is used for lookups.
 
 ---
 
@@ -122,6 +129,7 @@ Extensions (see below) include true embedding search.
 - **Geography requires enrichment**: the `complaintsByVehicle` endpoint does not reliably include structured `consumerLocation`, so the MVP enriches each complaint via the `safetyIssues/byNhtsaId` endpoint (cached, capped, parallelized).
 - **Search is TF‑IDF**: good enough for MVP symptom matching, but not as strong as embeddings for paraphrases.
 - **No persistence beyond cache**: the app doesn’t maintain a full database; it is optimized for “investigate a vehicle quickly.”
+- **Model naming is messy**: NHTSA `*ByVehicle` endpoints can be sensitive to exact model strings, and vPIC’s year-filtered model list may omit variants (e.g., Hybrid/EV). The UI supports “show more models” and a manual model override to handle these cases.
 
 ---
 
