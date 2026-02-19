@@ -296,13 +296,12 @@ with st.sidebar:
             st.session_state["_prev_draft_make"] = draft_make
 
         include_all_models = st.checkbox(
-            "Include all models for this make (ignore year)",
+            "Show more models (Hybrid/EV/variants)",
             value=st.session_state.get("draft_model_include_all", False),
             key="draft_model_include_all",
             disabled=(not draft_make),
             help=(
-                "Some variants (Hybrid/EV, etc.) don't always appear in the make+year list. "
-                "This widens the dropdown to all vPIC models for the make."
+                "Adds extra model names that sometimes don't show up for the selected year."
             ),
         )
 
@@ -341,7 +340,7 @@ with st.sidebar:
                 value=st.session_state.get("draft_model_manual", ""),
                 key="draft_model_manual",
                 placeholder="e.g., Accord Hybrid",
-                help="If provided, this exact text is used for the NHTSA lookup when you click Analyze vehicle.",
+                help="If you type something here, it will be used when you click Analyze vehicle.",
             )
 
     st.divider()
