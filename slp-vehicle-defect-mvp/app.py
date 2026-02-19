@@ -51,8 +51,8 @@ with st.sidebar:
     if input_mode == "VIN":
         vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
     else:
-        make = st.text_input("Make", value="", placeholder="Honda")
-        model = st.text_input("Model", value="", placeholder="Accord")
+        make = st.text_input("Make", value="", placeholder="e.g., Honda")
+        model = st.text_input("Model", value="", placeholder="e.g., Accord")
         year = st.number_input("Model year", min_value=1950, max_value=datetime.now().year + 1, value=2021, step=1)
 
     st.divider()
