@@ -29,29 +29,29 @@ def vp_get_all_makes() -> list[str]:
         r = requests.get(url, timeout=20)
         if r.status_code != 200:
             return []
-
         data = r.json()
-        makes = {row.get("Make_Name", "").strip() for row in (data.get("Results") or [])}
-        makes = {m for m in makes if m}
+        makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
+        makes = sorted({m for m in makes if m})
 
-        # Common consumer brands to prioritize
-        priority_brands = [
-            "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler",
-            "Dodge", "Ford", "Genesis", "GMC", "Honda", "Hyundai", "Infiniti",
-            "Jeep", "Kia", "Lexus", "Lincoln", "Mazda", "Mercedes-Benz",
-            "Mitsubishi", "Nissan", "Ram", "Subaru", "Tesla", "Toyota",
-            "Volkswagen", "Volvo"
+        # Common makes (prioritized A–Z)
+        common = [
+            "Acura", "Alfa Romeo", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler",
+            "Dodge", "Fiat", "Ford", "Genesis", "GMC", "Honda", "Hyundai", "Infiniti",
+            "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Lincoln", "Mazda", "Mercedes-Benz",
+            "Mini", "Mitsubishi", "Nissan", "Polestar", "Porsche", "Ram", "Rivian",
+            "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo",
         ]
 
-        # Keep only brands that actually exist in the API results
-        priority = sorted([m for m in makes if m in priority_brands])
-        others = sorted([m for m in makes if m not in priority_brands])
+        # Match case-insensitively against vPIC results, but return the vPIC spelling
+        makes_by_lower = {m.lower(): m for m in makes}
+        common_present = [makes_by_lower[c.lower()] for c in common if c.lower() in makes_by_lower]
 
-        return priority
+        common_set = {m.lower() for m in common_present}
+        rest = [m for m in makes if m.lower() not in common_set]
 
+        return common_present + rest
     except Exception:
         return []
-
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
