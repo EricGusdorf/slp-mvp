@@ -748,14 +748,14 @@ if "analysis_vehicle" in st.session_state:
                     <div id="slp-recalls-container" style="width: 100%;">
                       <style>
                         :root {{
-                          --track: rgba(147, 197, 253, 0.26);       /* even lighter blue */
-                          --thumb: rgba(147, 197, 253, 0.72);
-                          --thumb-hover: rgba(96, 165, 250, 0.92);
-                          --border: rgba(147, 197, 253, 0.32);
-                          --header: rgba(147, 197, 253, 0.16);
-                          --row-alt: rgba(147, 197, 253, 0.08);
-                          --text: rgba(30, 64, 175, 0.95);          /* keep readable */
-                          --text-muted: rgba(37, 99, 235, 0.92);
+                          --track: rgba(191, 219, 254, 0.30);       /* blue-200-ish */
+                          --thumb: rgba(147, 197, 253, 0.60);       /* blue-300-ish */
+                          --thumb-hover: rgba(96, 165, 250, 0.78);  /* blue-400-ish */
+                          --border: rgba(191, 219, 254, 0.40);
+                          --header: rgba(219, 234, 254, 0.65);      /* blue-100-ish */
+                          --row-alt: rgba(219, 234, 254, 0.38);
+                          --text: rgba(29, 78, 216, 0.88);          /* lighter blue text */
+                          --text-muted: rgba(37, 99, 235, 0.80);
                         }}
 
                         #slp-recalls-scroll {{
