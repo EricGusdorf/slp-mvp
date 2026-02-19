@@ -244,7 +244,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
 
-        with st.expander("View complaints (first 100)"):
+        with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
                 st.info("No complaints returned by NHTSA complaintsByVehicle.")
             else:
@@ -262,7 +262,8 @@ if "vehicle" in st.session_state:
                     ]
                     if c in complaints_df.columns
                 ]
-                st.dataframe(complaints_df[cols].head(100), use_container_width=True, hide_index=True)
+                st.dataframe(complaints_df[cols], use_container_width=True, hide_index=True)
+
 
         if enrich:
             st.caption(
