@@ -299,15 +299,7 @@ with st.sidebar:
             st.session_state["draft_model_manual"] = ""
             st.session_state["_prev_draft_make"] = draft_make
 
-        include_all_models = st.checkbox(
-            "Show more models (Hybrid/EV/variants)",
-            value=st.session_state.get("draft_model_include_all", False),
-            key="draft_model_include_all",
-            disabled=(not draft_make),
-            help=(
-                "Adds extra model names that sometimes don't show up for the selected year."
-            ),
-        )
+        include_all_models = bool(st.session_state.get("draft_model_include_all", False))
 
         models: list[str] = []
         if draft_make:
@@ -334,6 +326,14 @@ with st.sidebar:
             index=model_index,
             key="draft_model",
             disabled=(not draft_make) or bool(manual_text_existing),
+        )
+
+        st.checkbox(
+            "Show more models (Hybrid/EV/variants)",
+            value=st.session_state.get("draft_model_include_all", False),
+            key="draft_model_include_all",
+            disabled=(not draft_make),
+            help="Adds extra model names that sometimes don't show up for the selected year.",
         )
 
         manual_enabled = st.checkbox(
