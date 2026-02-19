@@ -197,7 +197,18 @@ if "vehicle" in st.session_state:
     complaints_df = st.session_state.get("complaints_df", pd.DataFrame())
     enrich_stats = st.session_state.get("enrich_stats", {"requested": 0, "enriched": 0, "failed": 0})
 
-    st.subheader(f"{v['year']} {v['make']} {v['model']}")
+    st.markdown(
+        f"""
+        <div style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem;">
+            {v['year']} 
+            <span style="color:#6b7280; font-weight:500;">
+                {v['make']} {v['model']}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     if v.get("vin"):
         st.caption(f"VIN: `{v['vin']}`")
 
