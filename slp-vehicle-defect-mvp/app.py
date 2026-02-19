@@ -786,7 +786,8 @@ if "analysis_vehicle" in st.session_state:
 
                         #slp-recalls-scroll {{
                           overflow-x: scroll;   /* force scroll container */
-                          overflow-y: hidden;
+                          overflow-y: auto;     /* allow vertical scrolling when many rows */
+                          max-height: 360px;    /* prevents iframe cropping */
                           width: 100%;
                           scrollbar-width: none; /* hide native scrollbar (Firefox) */
                         }}
