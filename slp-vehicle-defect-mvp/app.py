@@ -106,6 +106,25 @@ def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
         return []
 
 
+@st.cache_data(ttl=7 * 24 * 3600)
+def vp_get_models_for_make(make: str) -> list[str]:
+    """
+    vPIC's make+year model list can be incomplete for some makes/years.
+    This broader endpoint helps users find valid model strings (e.g., hybrids/EVs).
+    """
+    try:
+        make_q = quote_plus(make.strip())
+        url = f"https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/{make_q}?format=json"
+        r = requests.get(url, timeout=20)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        models = [row.get("Model_Name", "").strip() for row in (data.get("Results") or [])]
+        return sorted({m for m in models if m})
+    except Exception:
+        return []
+
+
 def _normalize(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
 
@@ -121,6 +140,10 @@ def _candidate_models(make: str, model: str, year: int) -> list[str]:
         return []
 
     models = vp_get_models_for_make_year(make, int(year))
+    # Some variants (e.g., hybrids) may not appear in the make+year list.
+    models_all = vp_get_models_for_make(make)
+    if models_all:
+        models = sorted({*models, *models_all})
     if not models:
         return []
 
@@ -269,11 +292,25 @@ with st.sidebar:
         prev_make = st.session_state.get("_prev_draft_make", "")
         if draft_make != prev_make:
             st.session_state["draft_model"] = ""
+            st.session_state["draft_model_manual"] = ""
             st.session_state["_prev_draft_make"] = draft_make
+
+        include_all_models = st.checkbox(
+            "Include all models for this make (ignore year)",
+            value=st.session_state.get("draft_model_include_all", False),
+            key="draft_model_include_all",
+            disabled=(not draft_make),
+            help=(
+                "Some variants (Hybrid/EV, etc.) don't always appear in the make+year list. "
+                "This widens the dropdown to all vPIC models for the make."
+            ),
+        )
 
         models: list[str] = []
         if draft_make:
             models = vp_get_models_for_make_year(draft_make, int(draft_year))
+            if include_all_models:
+                models = sorted({*models, *vp_get_models_for_make(draft_make)})
 
         # Keep current model if still valid for this make+year; otherwise clear
         current_model = st.session_state.get("draft_model", "")
@@ -291,6 +328,21 @@ with st.sidebar:
             key="draft_model",
             disabled=(not draft_make),
         )
+
+        manual_enabled = st.checkbox(
+            "Model not listed? Enter model manually",
+            value=st.session_state.get("draft_model_manual_enabled", False),
+            key="draft_model_manual_enabled",
+            disabled=(not draft_make),
+        )
+        if manual_enabled:
+            st.text_input(
+                "Model (manual override)",
+                value=st.session_state.get("draft_model_manual", ""),
+                key="draft_model_manual",
+                placeholder="e.g., Accord Hybrid",
+                help="If provided, this exact text is used for the NHTSA lookup when you click Analyze vehicle.",
+            )
 
     st.divider()
     analyze_clicked = st.button("Analyze vehicle", type="primary")
@@ -370,10 +422,16 @@ if analyze_clicked:
             }
 
         else:
-            if not draft_make or not draft_model or not draft_year:
+            model_for_lookup = draft_model
+            if st.session_state.get("draft_model_manual_enabled"):
+                manual = (st.session_state.get("draft_model_manual") or "").strip()
+                if manual:
+                    model_for_lookup = manual
+
+            if not draft_make or not model_for_lookup or not draft_year:
                 st.session_state["analysis_vehicle"] = {
                     "make": draft_make,
-                    "model": draft_model,
+                    "model": model_for_lookup,
                     "year": int(draft_year) if draft_year else None,
                     "vin": None,
                     "decoded": None,
@@ -384,7 +442,7 @@ if analyze_clicked:
 
             st.session_state["analysis_vehicle"] = {
                 "make": draft_make,
-                "model": draft_model,
+                "model": model_for_lookup,
                 "year": int(draft_year),
                 "vin": None,
                 "decoded": None,
