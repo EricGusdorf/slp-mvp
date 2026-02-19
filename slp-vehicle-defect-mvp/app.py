@@ -393,7 +393,7 @@ if "vehicle" in st.session_state:
                         "fire",
                         "numberOfInjuries",
                         "numberOfDeaths",
-                        "summary (double-click  entries to enlarge)",
+                        "summary",
                     ]
                     if c in complaints_df.columns
                 ]
