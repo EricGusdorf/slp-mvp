@@ -100,7 +100,7 @@ def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
         return []
 
 
-st.set_page_config(page_title="SLP Vehicle Defect MVP", layout="wide")
+st.set_page_config(page_title="Strategic Legal Practices | Vehicle Defect Assessment Tool", layout="wide")
 
 st.markdown(
     """
