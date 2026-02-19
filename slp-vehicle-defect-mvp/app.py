@@ -748,11 +748,14 @@ if "analysis_vehicle" in st.session_state:
                     <div id="slp-recalls-container" style="width: 100%;">
                       <style>
                         :root {{
-                          --track: rgba(107, 114, 128, 0.18);
-                          --thumb: rgba(107, 114, 128, 0.65);
-                          --thumb-hover: rgba(107, 114, 128, 0.85);
-                          --border: rgba(107, 114, 128, 0.25);
-                          --header: rgba(107, 114, 128, 0.08);
+                          --track: rgba(16, 185, 129, 0.18);        /* emerald */
+                          --thumb: rgba(16, 185, 129, 0.65);
+                          --thumb-hover: rgba(5, 150, 105, 0.85);
+                          --border: rgba(16, 185, 129, 0.28);
+                          --header: rgba(16, 185, 129, 0.12);
+                          --row-alt: rgba(16, 185, 129, 0.06);
+                          --text: rgba(6, 95, 70, 1);               /* emerald-800-ish */
+                          --text-muted: rgba(6, 78, 59, 0.9);        /* emerald-900-ish */
                         }}
 
                         #slp-recalls-scroll {{
@@ -778,6 +781,8 @@ if "analysis_vehicle" in st.session_state:
                           border-bottom: 1px solid var(--border);
                           white-space: nowrap;
                           vertical-align: top;
+                          text-align: left;
+                          color: var(--text);
                         }}
                         #slp-recalls-scroll th {{
                           font-weight: 600;
@@ -785,6 +790,10 @@ if "analysis_vehicle" in st.session_state:
                           position: sticky;
                           top: 0;
                           z-index: 1;
+                          color: var(--text-muted);
+                        }}
+                        #slp-recalls-scroll tbody tr:nth-child(even) td {{
+                          background: var(--row-alt);
                         }}
 
                         /* Always-visible custom scrollbar */
