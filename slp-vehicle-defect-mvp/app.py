@@ -1,9 +1,11 @@
 import os
 from datetime import datetime
 from typing import Optional
+from urllib.parse import quote_plus
 
 import pandas as pd
 import plotly.express as px
+import requests
 import streamlit as st
 
 from slp_mvp.cache import DiskCache
@@ -17,6 +19,27 @@ from slp_mvp.analytics import (
 )
 from slp_mvp.enrich import enrich_complaints_df
 from slp_mvp.text_search import build_index, search as search_index
+
+
+@st.cache_data(ttl=7 * 24 * 3600)
+def vp_get_all_makes() -> list[str]:
+    url = "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json"
+    r = requests.get(url, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
+    return sorted({m for m in makes if m})
+
+
+@st.cache_data(ttl=7 * 24 * 3600)
+def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
+    make_q = quote_plus(make.strip())
+    url = f"https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/{make_q}/modelyear/{int(year)}?format=json"
+    r = requests.get(url, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    models = [row.get("Model_Name", "").strip() for row in (data.get("Results") or [])]
+    return sorted({m for m in models if m})
 
 
 st.set_page_config(page_title="SLP Vehicle Defect MVP", layout="wide")
@@ -51,9 +74,22 @@ with st.sidebar:
     if input_mode == "VIN":
         vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
     else:
-        make = st.text_input("Make", value="", placeholder="e.g., Honda")
-        model = st.text_input("Model", value="", placeholder="e.g., Accord")
-        year = st.number_input("Model year", min_value=1950, max_value=datetime.now().year + 1, value=2021, step=1)
+        year = st.number_input(
+            "Model year",
+            min_value=1950,
+            max_value=datetime.now().year + 1,
+            value=2021,
+            step=1,
+        )
+
+        makes = vp_get_all_makes()
+        make = st.selectbox("Make", options=[""] + makes, index=0)
+
+        models: list[str] = []
+        if make:
+            models = vp_get_models_for_make_year(make, int(year))
+
+        model = st.selectbox("Model", options=[""] + models, index=0, disabled=(not make))
 
     st.divider()
     analyze_clicked = st.button("Analyze vehicle", type="primary")
@@ -208,7 +244,6 @@ if "vehicle" in st.session_state:
         """,
         unsafe_allow_html=True,
     )
-
 
     if v.get("vin"):
         st.caption(f"VIN: `{v['vin']}`")
