@@ -112,8 +112,42 @@ if analyze_clicked:
 
         v = st.session_state["vehicle"]
         with st.spinner("Fetching NHTSA recalls + complaints..."):
-            recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-            complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
+    recalls = []
+    complaints = []
+    recalls_err = None
+    complaints_err = None
+
+    try:
+        recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
+    except NHTSAError as e:
+        recalls_err = str(e)
+
+    try:
+        complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
+    except NHTSAError as e:
+        complaints_err = str(e)
+
+# If BOTH endpoints failed, show a service error (not an invalid vehicle)
+if recalls_err and complaints_err:
+    st.error("NHTSA services are currently unavailable for this lookup. Please try again.")
+    with st.expander("Details"):
+        st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
+    st.stop()
+
+# If requests succeeded but returned no data, treat as invalid vehicle
+if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
+    st.error(
+        f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
+        "Verify the make, model, and year."
+    )
+    st.stop()
+
+# If one failed but the other succeeded, proceed with what we have (minimal MVP)
+if recalls_err and not complaints_err:
+    st.warning("Recalls lookup failed; showing complaints only.")
+if complaints_err and not recalls_err:
+    st.warning("Complaints lookup failed; showing recalls only.")
+
         # Validate vehicle existence
         if not recalls and not complaints:
             st.error(
