@@ -232,24 +232,27 @@ st.markdown(
     }
 
     /* ---- Hide Streamlit header "link" (permalink) icons ---- */
+    .stHeadingAnchor,
+    .stMarkdownHeadingAnchor,
     a.stMarkdownHeaderAnchor,
     a.header-anchor,
-    h1 > a[href^="#"],
-    h2 > a[href^="#"],
-    h3 > a[href^="#"],
-    h4 > a[href^="#"],
-    h5 > a[href^="#"],
-    h6 > a[href^="#"],
-    h1 > a[href^="#"] svg,
-    h2 > a[href^="#"] svg,
-    h3 > a[href^="#"] svg,
-    h4 > a[href^="#"] svg,
-    h5 > a[href^="#"] svg,
-    h6 > a[href^="#"] svg {
+    h1 a[href^="#"],
+    h2 a[href^="#"],
+    h3 a[href^="#"],
+    h4 a[href^="#"],
+    h5 a[href^="#"],
+    h6 a[href^="#"] {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
         height: 0 !important;
+    }
+
+    /* ---- Simple section headings (no anchor icons) ---- */
+    .slp-section-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
     }
     </style>
     """,
@@ -635,7 +638,7 @@ if "analysis_vehicle" in st.session_state:
     with tabs[0]:
         left, right = st.columns([1, 1])
         with left:
-            st.subheader("Defect patterns")
+            st.markdown('<div class="slp-section-title">Defect patterns</div>', unsafe_allow_html=True)
             comp_df = component_frequency(complaints_df)
             if comp_df.empty:
                 st.info("No complaint component labels returned for this vehicle.")
@@ -667,7 +670,7 @@ if "analysis_vehicle" in st.session_state:
                 st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         with right:
-            st.subheader("Recalls")
+            st.markdown('<div class="slp-section-title">Recalls</div>', unsafe_allow_html=True)
             if recalls_df is None or recalls_df.empty:
                 st.info("No recalls returned by NHTSA.")
             else:
