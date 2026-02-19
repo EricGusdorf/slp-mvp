@@ -56,15 +56,10 @@ with st.sidebar:
         year = st.number_input("Model year", min_value=1950, max_value=datetime.now().year + 1, value=2021, step=1)
 
     st.divider()
-    enrich = st.checkbox(
-        "Include complaint details (location + full text)",
-        value=True,
-        help="Needed for the map; improves symptom search. Uses a capped, cached NHTSA lookup per complaint.",
-    )
-
-    st.divider()
     analyze_clicked = st.button("Analyze vehicle", type="primary")
 
+# Enrichment always on (no UI toggle)
+enrich = True
 
 # Keep enrichment controls out of the UI (minimal MVP).
 ENRICH_LIMIT = int(os.environ.get("SLP_ENRICH_LIMIT", "120"))
@@ -174,7 +169,7 @@ if analyze_clicked:
         complaints_df = complaints_to_df(complaints)
 
         enrich_stats = {"requested": 0, "enriched": 0, "failed": 0}
-        if enrich and not complaints_df.empty:
+        if not complaints_df.empty:
             with st.spinner("Enriching complaints (location + full text)..."):
                 complaints_df, enrich_stats = enrich_complaints_df(
                     complaints_df,
@@ -264,13 +259,6 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(complaints_df[cols], use_container_width=True, hide_index=True)
 
-
-        if enrich:
-            st.caption(
-                f"Enrichment (capped): requested {enrich_stats.get('requested',0)}, "
-                f"enriched {enrich_stats.get('enriched',0)}, failed {enrich_stats.get('failed',0)}."
-            )
-
     # --- Search ---
     with tabs[1]:
         st.write("Search within this vehicle's NHTSA complaints by symptom text.")
@@ -312,12 +300,10 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-        # --- Map ---
+    # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
-            st.warning(
-                "No complaint location data available. Enable 'Include complaint details (location + full text)' and re-run."
-            )
+            st.warning("No complaint location data available from NHTSA.")
         else:
             geo = complaints_df.dropna(subset=["stateAbbreviation"]).copy()
             counts = geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
@@ -329,29 +315,16 @@ if "vehicle" in st.session_state:
                 color="count",
                 scope="usa",
                 title="Complaints by state (from NHTSA consumer location)",
-                color_continuous_scale="Blues",  # Blue gradient
+                color_continuous_scale="Blues",
             )
 
-            # Increase contrast so higher counts are noticeably darker
-            fig.update_coloraxes(
-                cmin=0,
-                cmax=counts["count"].max(),
-            )
-
+            fig.update_coloraxes(cmin=0, cmax=counts["count"].max())
             fig.update_geos(projection_type="albers usa", fitbounds=False)
-            fig.update_layout(
-                height=500,
-                margin=dict(l=10, r=10, t=50, b=10),
-                dragmode=False,
-            )
+            fig.update_layout(height=500, margin=dict(l=10, r=10, t=50, b=10), dragmode=False)
 
-            config = {
-                "scrollZoom": False,
-                "displayModeBar": False,
-                "doubleClick": False,
-            }
-
+            config = {"scrollZoom": False, "displayModeBar": False, "doubleClick": False}
             st.plotly_chart(fig, use_container_width=True, config=config)
+
             st.dataframe(
                 counts.sort_values("count", ascending=False).head(25),
                 use_container_width=True,
