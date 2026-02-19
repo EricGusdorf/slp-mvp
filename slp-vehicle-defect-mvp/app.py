@@ -122,16 +122,17 @@ cache = DiskCache(DEFAULT_CACHE_DIR)
 with st.sidebar:
     st.header("Vehicle input")
 
-    with st.form("vehicle_form", clear_on_submit=False):
-        input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
+    # Keep this OUTSIDE the form so it switches immediately
+    input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False, key="input_mode")
 
+    with st.form("vehicle_form", clear_on_submit=False):
         vin = ""
         make = ""
         model = ""
         year: Optional[int] = None
 
         if input_mode == "VIN":
-            vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
+            vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456", key="vin")
         else:
             year = st.number_input(
                 "Model year",
@@ -151,7 +152,7 @@ with st.sidebar:
                 key="make",
             )
 
-            # Only reset model when make changes
+            # Reset model only when make changes
             prev_make = st.session_state.get("_prev_make", "")
             if make != prev_make:
                 st.session_state["model"] = ""
@@ -179,6 +180,7 @@ with st.sidebar:
             )
 
         analyze_clicked = st.form_submit_button("Analyze vehicle", type="primary")
+
 
 
 # Enrichment always on (no UI toggle)
