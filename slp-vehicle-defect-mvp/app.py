@@ -201,13 +201,14 @@ if "vehicle" in st.session_state:
         f"""
         <div style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem;">
             {v['year']} 
-            <span style="color:#9ca3af; font-weight:500;">
-                {v['make']} {v['model']}
+            <span style="color:#6b7280; font-weight:500;">
+                e.g., {v['make']} {v['model']}
             </span>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
 
     if v.get("vin"):
         st.caption(f"VIN: `{v['vin']}`")
