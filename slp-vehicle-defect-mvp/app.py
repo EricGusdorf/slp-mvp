@@ -32,7 +32,6 @@ def vp_get_all_makes() -> list[str]:
         makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
         makes = sorted({m for m in makes if m})
 
-        # Common makes (prioritized A–Z)
         common = [
             "Acura",
             "Alfa Romeo",
@@ -72,7 +71,6 @@ def vp_get_all_makes() -> list[str]:
             "Volvo",
         ]
 
-        # Match case-insensitively against vPIC results, but return the vPIC spelling
         makes_by_lower = {m.lower(): m for m in makes}
         common_present = [makes_by_lower[c.lower()] for c in common if c.lower() in makes_by_lower]
 
@@ -117,7 +115,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Cache ---
 DEFAULT_CACHE_DIR = os.environ.get("SLP_CACHE_DIR", ".cache")
 cache = DiskCache(DEFAULT_CACHE_DIR)
 
@@ -138,31 +135,46 @@ with st.sidebar:
             "Model year",
             min_value=1950,
             max_value=datetime.now().year + 1,
-            value=2021,
+            value=st.session_state.get("year", 2021),
             step=1,
+            key="year",
         )
 
         makes = vp_get_all_makes()
 
-        if "make_index" not in st.session_state:
-            st.session_state.make_index = 0
-
         make = st.selectbox(
             "Make",
             options=[""] + makes,
-            index=st.session_state.make_index,
-            key="make_selectbox",
+            index=0,
+            key="make",
         )
 
-        # Persist selected index
-        if make != "":
-            st.session_state.make_index = ([""] + makes).index(make)
+        # Reset model only when make changes (not when year changes)
+        prev_make = st.session_state.get("_prev_make", "")
+        if make != prev_make:
+            st.session_state["model"] = ""
+            st.session_state["_prev_make"] = make
 
         models: list[str] = []
         if make:
             models = vp_get_models_for_make_year(make, int(year))
 
-        model = st.selectbox("Model", options=[""] + models, index=0, disabled=(not make))
+        # Keep current model if still valid for this make+year; otherwise clear
+        current_model = st.session_state.get("model", "")
+        if current_model and current_model not in models:
+            st.session_state["model"] = ""
+
+        options = [""] + models
+        selected_model = st.session_state.get("model", "")
+        model_index = options.index(selected_model) if selected_model in options else 0
+
+        model = st.selectbox(
+            "Model",
+            options=options,
+            index=model_index,
+            key="model",
+            disabled=(not make),
+        )
 
     st.divider()
     analyze_clicked = st.button("Analyze vehicle", type="primary")
@@ -170,7 +182,6 @@ with st.sidebar:
 # Enrichment always on (no UI toggle)
 enrich = True
 
-# Keep enrichment controls out of the UI (minimal MVP).
 ENRICH_LIMIT = int(os.environ.get("SLP_ENRICH_LIMIT", "120"))
 ENRICH_WORKERS = int(os.environ.get("SLP_ENRICH_WORKERS", "6"))
 
@@ -229,8 +240,6 @@ if analyze_clicked:
 
         v = st.session_state["vehicle"]
 
-        # Fetch: handle per-endpoint errors so we can distinguish
-        # "invalid vehicle" (empty data) vs "NHTSA unavailable" (errors).
         with st.spinner("Fetching NHTSA recalls + complaints..."):
             recalls = []
             complaints = []
@@ -247,7 +256,6 @@ if analyze_clicked:
             except NHTSAError as e:
                 complaints_err = str(e)
 
-        # If BOTH endpoints failed, show a service error (not an invalid vehicle).
         if recalls_err and complaints_err:
             st.error(
                 "NHTSA services are currently unavailable for this lookup. "
@@ -257,7 +265,6 @@ if analyze_clicked:
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
             st.stop()
 
-        # If requests succeeded but returned no data, treat as invalid vehicle.
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
             st.error(
                 f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
@@ -265,7 +272,6 @@ if analyze_clicked:
             )
             st.stop()
 
-        # Partial failure: continue with warning (minimal MVP).
         if recalls_err and not complaints_err:
             st.warning("Recalls lookup failed; showing complaints only. Vehicle may not exist.")
         if complaints_err and not recalls_err:
@@ -342,7 +348,7 @@ if "vehicle" in st.session_state:
                 st.info("No complaint component labels returned for this vehicle.")
             else:
                 top_n = comp_df.head(10)
-    
+
                 fig = px.bar(
                     top_n,
                     x="count",
@@ -352,21 +358,21 @@ if "vehicle" in st.session_state:
                 )
                 fig.update_layout(height=360, margin=dict(l=10, r=10, t=45, b=10))
                 st.plotly_chart(fig, use_container_width=True)
-    
-                # Rename and format columns for clarity
+
                 display_df = top_n[["component", "count", "share"]].copy()
-                display_df = display_df.rename(columns={
-                    "component": "Component",
-                    "count": "Complaint Count",
-                    "share": "Share of Total Complaints (%)",
-                })
-    
+                display_df = display_df.rename(
+                    columns={
+                        "component": "Component",
+                        "count": "Complaint Count",
+                        "share": "Share of Total Complaints (%)",
+                    }
+                )
                 display_df["Share of Total Complaints (%)"] = (
                     display_df["Share of Total Complaints (%)"] * 100
                 ).round(1)
-    
+
                 st.dataframe(display_df, use_container_width=True, hide_index=True)
-    
+
         with right:
             st.subheader("Recalls")
             if recalls_df is None or recalls_df.empty:
@@ -378,7 +384,7 @@ if "vehicle" in st.session_state:
                     if c in recalls_df.columns
                 ]
                 st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
-    
+
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
                 st.info("No complaints returned by NHTSA complaintsByVehicle.")
