@@ -147,7 +147,7 @@ Extensions (see below) include true embedding search.
 
 ## AI tools used
 
-ChatGPT 5.2 Pro
+ChatGPT 5.2 Pro, Cursor
 
 ---
 
