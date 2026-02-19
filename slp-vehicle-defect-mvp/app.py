@@ -29,11 +29,29 @@ def vp_get_all_makes() -> list[str]:
         r = requests.get(url, timeout=20)
         if r.status_code != 200:
             return []
+
         data = r.json()
-        makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
-        return sorted({m for m in makes if m})
+        makes = {row.get("Make_Name", "").strip() for row in (data.get("Results") or [])}
+        makes = {m for m in makes if m}
+
+        # Common consumer brands to prioritize
+        priority_brands = [
+            "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler",
+            "Dodge", "Ford", "Genesis", "GMC", "Honda", "Hyundai", "Infiniti",
+            "Jeep", "Kia", "Lexus", "Lincoln", "Mazda", "Mercedes-Benz",
+            "Mitsubishi", "Nissan", "Ram", "Subaru", "Tesla", "Toyota",
+            "Volkswagen", "Volvo"
+        ]
+
+        # Keep only brands that actually exist in the API results
+        priority = sorted([m for m in makes if m in priority_brands])
+        others = sorted([m for m in makes if m not in priority_brands])
+
+        return priority + others
+
     except Exception:
         return []
+
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
