@@ -47,7 +47,7 @@ def vp_get_all_makes() -> list[str]:
         priority = sorted([m for m in makes if m in priority_brands])
         others = sorted([m for m in makes if m not in priority_brands])
 
-        return priority + others
+        return priority
 
     except Exception:
         return []
