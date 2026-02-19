@@ -259,7 +259,7 @@ if analyze_clicked:
         if recalls_err and complaints_err:
             st.error(
                 "NHTSA services are currently unavailable for this lookup. "
-                "Please try again and confirm the vehicle make, model, and year are spelled correctly."
+                "Please confirm the vehicle exists and try again."
             )
             with st.expander("Details"):
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
