@@ -219,57 +219,62 @@ with st.sidebar:
     st.header("Vehicle input")
     input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
 
-    vin = ""
-    make = ""
-    model = ""
-    year: Optional[int] = None
+    draft_vin = ""
+    draft_make = ""
+    draft_model = ""
+    draft_year: Optional[int] = None
 
     if input_mode == "VIN":
-        vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
+        draft_vin = st.text_input(
+            "VIN (17 chars)",
+            value=st.session_state.get("draft_vin", ""),
+            placeholder="e.g., 1HGCV1F56MA123456",
+            key="draft_vin",
+        )
     else:
-        year = st.number_input(
+        draft_year = st.number_input(
             "Model year",
             min_value=1950,
             max_value=datetime.now().year + 1,
-            value=st.session_state.get("year", 2021),
+            value=st.session_state.get("draft_year", 2021),
             step=1,
-            key="year",
+            key="draft_year",
         )
 
         makes = vp_get_all_makes()
 
-        make = st.selectbox(
+        draft_make = st.selectbox(
             "Make",
             options=[""] + makes,
             index=0,
-            key="make",
+            key="draft_make",
         )
 
         # Reset model only when make changes (not when year changes)
-        prev_make = st.session_state.get("_prev_make", "")
-        if make != prev_make:
-            st.session_state["model"] = ""
-            st.session_state["_prev_make"] = make
+        prev_make = st.session_state.get("_prev_draft_make", "")
+        if draft_make != prev_make:
+            st.session_state["draft_model"] = ""
+            st.session_state["_prev_draft_make"] = draft_make
 
         models: list[str] = []
-        if make:
-            models = vp_get_models_for_make_year(make, int(year))
+        if draft_make:
+            models = vp_get_models_for_make_year(draft_make, int(draft_year))
 
         # Keep current model if still valid for this make+year; otherwise clear
-        current_model = st.session_state.get("model", "")
+        current_model = st.session_state.get("draft_model", "")
         if current_model and current_model not in models:
-            st.session_state["model"] = ""
+            st.session_state["draft_model"] = ""
 
         options = [""] + models
-        selected_model = st.session_state.get("model", "")
+        selected_model = st.session_state.get("draft_model", "")
         model_index = options.index(selected_model) if selected_model in options else 0
 
-        model = st.selectbox(
+        draft_model = st.selectbox(
             "Model",
             options=options,
             index=model_index,
-            key="model",
-            disabled=(not make),
+            key="draft_model",
+            disabled=(not draft_make),
         )
 
     st.divider()
@@ -302,39 +307,39 @@ def _best_text_column(df: pd.DataFrame) -> str:
 if analyze_clicked:
     try:
         if input_mode == "VIN":
-            if not vin:
+            if not draft_vin:
                 st.error("Enter a VIN.")
                 st.stop()
 
-            make_, model_, year_, decoded, warn = _vehicle_from_vin(vin)
+            make_, model_, year_, decoded, warn = _vehicle_from_vin(draft_vin)
             if warn:
                 st.info(f"VIN decode warning: {warn}")
             if not make_ or not model_ or not year_:
                 st.error("Could not decode make/model/year from VIN. Try Make/Model/Year input.")
                 st.stop()
 
-            st.session_state["vehicle"] = {
+            st.session_state["analysis_vehicle"] = {
                 "make": make_,
                 "model": model_,
                 "year": year_,
-                "vin": vin,
+                "vin": draft_vin,
                 "decoded": decoded,
             }
 
         else:
-            if not make or not model or not year:
+            if not draft_make or not draft_model or not draft_year:
                 st.error("Enter make, model, and year.")
                 st.stop()
 
-            st.session_state["vehicle"] = {
-                "make": make,
-                "model": model,
-                "year": int(year),
+            st.session_state["analysis_vehicle"] = {
+                "make": draft_make,
+                "model": draft_model,
+                "year": int(draft_year),
                 "vin": None,
                 "decoded": None,
             }
 
-        v = st.session_state["vehicle"]
+        v = st.session_state["analysis_vehicle"]
 
         # Fetch with fallback model tries
         with st.spinner("Fetching NHTSA recalls + complaints..."):
@@ -383,9 +388,9 @@ if analyze_clicked:
         # If fallback found results, update model and inform user (blue)
         if (used_model != v["model"]) and (recalls or complaints):
             original_model = v["model"]
-            st.session_state["vehicle"]["model"] = used_model
+            st.session_state["analysis_vehicle"]["model"] = used_model
             st.info(f"No results for model '{original_model}'. Showing results for closest match '{used_model}'.")
-            v = st.session_state["vehicle"]
+            v = st.session_state["analysis_vehicle"]
 
         # No errors + still no data => treat as invalid/no data for this vehicle
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
@@ -401,8 +406,8 @@ if analyze_clicked:
         if complaints_err and not recalls_err:
             st.info("No complaints found; showing recalls only.")
 
-        st.session_state["raw_recalls"] = recalls
-        st.session_state["raw_complaints"] = complaints
+        st.session_state["analysis_raw_recalls"] = recalls
+        st.session_state["analysis_raw_complaints"] = complaints
 
         recalls_df = recalls_to_df(recalls)
         complaints_df = complaints_to_df(complaints)
@@ -417,9 +422,9 @@ if analyze_clicked:
                     max_workers=int(ENRICH_WORKERS),
                 )
 
-        st.session_state["recalls_df"] = recalls_df
-        st.session_state["complaints_df"] = complaints_df
-        st.session_state["enrich_stats"] = enrich_stats
+        st.session_state["analysis_recalls_df"] = recalls_df
+        st.session_state["analysis_complaints_df"] = complaints_df
+        st.session_state["analysis_enrich_stats"] = enrich_stats
 
     except NHTSAError as e:
         st.error(str(e))
@@ -431,11 +436,24 @@ if analyze_clicked:
 
 
 # --- Display results if available ---
-if "vehicle" in st.session_state:
-    v = st.session_state["vehicle"]
-    recalls_df = st.session_state.get("recalls_df", pd.DataFrame())
-    complaints_df = st.session_state.get("complaints_df", pd.DataFrame())
-    enrich_stats = st.session_state.get("enrich_stats", {"requested": 0, "enriched": 0, "failed": 0})
+# Back-compat: if older keys exist (from prior session) but new ones don't, reuse them.
+if ("analysis_vehicle" not in st.session_state) and ("vehicle" in st.session_state):
+    st.session_state["analysis_vehicle"] = st.session_state["vehicle"]
+    st.session_state["analysis_recalls_df"] = st.session_state.get("recalls_df", pd.DataFrame())
+    st.session_state["analysis_complaints_df"] = st.session_state.get("complaints_df", pd.DataFrame())
+    st.session_state["analysis_enrich_stats"] = st.session_state.get(
+        "enrich_stats", {"requested": 0, "enriched": 0, "failed": 0}
+    )
+    st.session_state["analysis_raw_recalls"] = st.session_state.get("raw_recalls", [])
+    st.session_state["analysis_raw_complaints"] = st.session_state.get("raw_complaints", [])
+
+if "analysis_vehicle" in st.session_state:
+    v = st.session_state["analysis_vehicle"]
+    recalls_df = st.session_state.get("analysis_recalls_df", pd.DataFrame())
+    complaints_df = st.session_state.get("analysis_complaints_df", pd.DataFrame())
+    enrich_stats = st.session_state.get(
+        "analysis_enrich_stats", {"requested": 0, "enriched": 0, "failed": 0}
+    )
 
     st.markdown(
         f"""
