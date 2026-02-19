@@ -257,6 +257,8 @@ with st.sidebar:
     st.header("Vehicle input")
     input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
 
+    analyze_clicked = False
+
     draft_vin = ""
     draft_make = ""
     draft_model = ""
@@ -269,6 +271,8 @@ with st.sidebar:
             placeholder="e.g., 1HGCV1F56MA123456",
             key="draft_vin",
         )
+        st.divider()
+        analyze_clicked = st.button("Analyze vehicle", type="primary")
     else:
         draft_year = st.number_input(
             "Model year",
@@ -320,12 +324,16 @@ with st.sidebar:
         selected_model = st.session_state.get("draft_model", "")
         model_index = options.index(selected_model) if selected_model in options else 0
 
+        manual_text_existing = (st.session_state.get("draft_model_manual") or "").strip()
+        if "draft_model_manual_enabled" not in st.session_state:
+            st.session_state["draft_model_manual_enabled"] = bool(manual_text_existing)
+
         draft_model = st.selectbox(
             "Model",
             options=options,
             index=model_index,
             key="draft_model",
-            disabled=(not draft_make),
+            disabled=(not draft_make) or bool(manual_text_existing),
         )
 
         manual_enabled = st.checkbox(
@@ -334,7 +342,7 @@ with st.sidebar:
             key="draft_model_manual_enabled",
             disabled=(not draft_make),
         )
-        if manual_enabled:
+        if manual_enabled or bool(manual_text_existing):
             st.text_input(
                 "Model (manual override)",
                 value=st.session_state.get("draft_model_manual", ""),
@@ -342,9 +350,11 @@ with st.sidebar:
                 placeholder="e.g., Accord Hybrid",
                 help="If you type something here, it will be used when you click Analyze vehicle.",
             )
+            if (st.session_state.get("draft_model_manual") or "").strip():
+                st.caption("Using manual model text for analysis. Clear it to re-enable the dropdown.")
 
-    st.divider()
-    analyze_clicked = st.button("Analyze vehicle", type="primary")
+        st.divider()
+        analyze_clicked = st.button("Analyze vehicle", type="primary")
 
 # Enrichment always on (no UI toggle)
 enrich = True
@@ -422,10 +432,9 @@ if analyze_clicked:
 
         else:
             model_for_lookup = draft_model
-            if st.session_state.get("draft_model_manual_enabled"):
-                manual = (st.session_state.get("draft_model_manual") or "").strip()
-                if manual:
-                    model_for_lookup = manual
+            manual = (st.session_state.get("draft_model_manual") or "").strip()
+            if manual:
+                model_for_lookup = manual
 
             if not draft_make or not model_for_lookup or not draft_year:
                 st.session_state["analysis_vehicle"] = {
