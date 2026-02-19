@@ -214,66 +214,84 @@ DEFAULT_CACHE_DIR = os.environ.get("SLP_CACHE_DIR", ".cache")
 cache = DiskCache(DEFAULT_CACHE_DIR)
 
 
-# --- Sidebar: vehicle selection ---
+# --- Sidebar: vehicle selection (use a form so results update only on submit) ---
+# Initialize UI-state defaults
+st.session_state.setdefault("ui_input_mode", "Make / Model / Year")
+st.session_state.setdefault("ui_vin", "")
+st.session_state.setdefault("ui_year", 2021)
+st.session_state.setdefault("ui_make", "")
+st.session_state.setdefault("ui_model", "")
+st.session_state.setdefault("_prev_ui_make", "")
+
 with st.sidebar:
     st.header("Vehicle input")
-    input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
 
-    vin = ""
-    make = ""
-    model = ""
-    year: Optional[int] = None
-
-    if input_mode == "VIN":
-        vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
-    else:
-        year = st.number_input(
-            "Model year",
-            min_value=1950,
-            max_value=datetime.now().year + 1,
-            value=st.session_state.get("year", 2021),
-            step=1,
-            key="year",
+    with st.form("vehicle_form", clear_on_submit=False):
+        input_mode = st.radio(
+            "Lookup by",
+            ["VIN", "Make / Model / Year"],
+            horizontal=False,
+            key="ui_input_mode",
         )
 
-        makes = vp_get_all_makes()
+        vin = ""
+        make = ""
+        model = ""
+        year: Optional[int] = None
 
-        make = st.selectbox(
-            "Make",
-            options=[""] + makes,
-            index=0,
-            key="make",
-        )
+        if input_mode == "VIN":
+            vin = st.text_input(
+                "VIN (17 chars)",
+                value=st.session_state["ui_vin"],
+                placeholder="e.g., 1HGCV1F56MA123456",
+                key="ui_vin",
+            )
+        else:
+            year = st.number_input(
+                "Model year",
+                min_value=1950,
+                max_value=datetime.now().year + 1,
+                value=int(st.session_state["ui_year"]),
+                step=1,
+                key="ui_year",
+            )
 
-        # Reset model only when make changes (not when year changes)
-        prev_make = st.session_state.get("_prev_make", "")
-        if make != prev_make:
-            st.session_state["model"] = ""
-            st.session_state["_prev_make"] = make
+            makes = vp_get_all_makes()
+            make = st.selectbox(
+                "Make",
+                options=[""] + makes,
+                index=([""] + makes).index(st.session_state["ui_make"])
+                if st.session_state["ui_make"] in ([""] + makes)
+                else 0,
+                key="ui_make",
+            )
 
-        models: list[str] = []
-        if make:
-            models = vp_get_models_for_make_year(make, int(year))
+            # Reset UI model only when UI make changes (not when year changes)
+            prev_ui_make = st.session_state.get("_prev_ui_make", "")
+            if make != prev_ui_make:
+                st.session_state["ui_model"] = ""
+                st.session_state["_prev_ui_make"] = make
 
-        # Keep current model if still valid for this make+year; otherwise clear
-        current_model = st.session_state.get("model", "")
-        if current_model and current_model not in models:
-            st.session_state["model"] = ""
+            models: list[str] = []
+            if make:
+                models = vp_get_models_for_make_year(make, int(year))
 
-        options = [""] + models
-        selected_model = st.session_state.get("model", "")
-        model_index = options.index(selected_model) if selected_model in options else 0
+            # Keep UI model if still valid; otherwise clear
+            if st.session_state["ui_model"] and st.session_state["ui_model"] not in models:
+                st.session_state["ui_model"] = ""
 
-        model = st.selectbox(
-            "Model",
-            options=options,
-            index=model_index,
-            key="model",
-            disabled=(not make),
-        )
+            options = [""] + models
+            model = st.selectbox(
+                "Model",
+                options=options,
+                index=options.index(st.session_state["ui_model"]) if st.session_state["ui_model"] in options else 0,
+                key="ui_model",
+                disabled=(not make),
+            )
 
-    st.divider()
-    analyze_clicked = st.button("Analyze vehicle", type="primary")
+        st.divider()
+        analyze_clicked = st.form_submit_button("Analyze vehicle", type="primary")
+
 
 # Enrichment always on (no UI toggle)
 enrich = True
@@ -301,6 +319,13 @@ def _best_text_column(df: pd.DataFrame) -> str:
 # --- Run analysis ---
 if analyze_clicked:
     try:
+        # Read inputs from the sidebar form state (ui_*) rather than the live UI controls
+        input_mode = st.session_state.get("ui_input_mode", "Make / Model / Year")
+        vin = st.session_state.get("ui_vin", "")
+        make = st.session_state.get("ui_make", "")
+        model = st.session_state.get("ui_model", "")
+        year = st.session_state.get("ui_year", 2021)
+
         if input_mode == "VIN":
             if not vin:
                 st.error("Enter a VIN.")
