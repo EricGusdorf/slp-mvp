@@ -111,7 +111,21 @@ with st.sidebar:
         )
 
         makes = vp_get_all_makes()
-        make = st.selectbox("Make", options=[""] + makes, index=0)
+
+        if "make_index" not in st.session_state:
+            st.session_state.make_index = 0
+        
+        make = st.selectbox(
+            "Make",
+            options=[""] + makes,
+            index=st.session_state.make_index,
+            key="make_selectbox",
+        )
+        
+        # Reset index to 0 whenever selection changes
+        if make != "":
+            st.session_state.make_index = ([""] + makes).index(make)
+
 
         models: list[str] = []
         if make:
