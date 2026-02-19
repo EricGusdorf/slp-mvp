@@ -778,7 +778,7 @@ if "analysis_vehicle" in st.session_state:
                           --thumb: rgba(96, 165, 250, 0.70);
                           --thumb-hover: rgba(59, 130, 246, 0.90);
                           --border: rgba(96, 165, 250, 0.30);
-                          --header: rgba(96, 165, 250, 0.14);
+                          --header: rgb(219, 234, 254);            /* solid (not transparent) */
                           --row-alt: rgba(96, 165, 250, 0.07);
                           --text: rgba(30, 64, 175, 1);             /* blue-800-ish */
                           --text-muted: rgba(29, 78, 216, 0.95);     /* blue-700-ish */
@@ -813,7 +813,7 @@ if "analysis_vehicle" in st.session_state:
                         }}
                         #slp-recalls-scroll th {{
                           font-weight: 600;
-                          background: var(--header);
+                          background: var(--header) !important;
                           position: sticky;
                           top: 0;
                           z-index: 1;
