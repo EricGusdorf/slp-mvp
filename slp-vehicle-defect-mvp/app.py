@@ -153,7 +153,6 @@ if analyze_clicked:
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
             st.stop()
 
-
         # If requests succeeded but returned no data, treat as invalid vehicle.
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
             st.error(
@@ -320,9 +319,7 @@ if "vehicle" in st.session_state:
             )
         else:
             geo = complaints_df.dropna(subset=["stateAbbreviation"]).copy()
-            counts = (
-                geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
-            )
+            counts = geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
 
             fig = px.choropleth(
                 counts,
@@ -331,8 +328,13 @@ if "vehicle" in st.session_state:
                 color="count",
                 scope="usa",
                 title="Complaints by state (from NHTSA consumer location)",
+                color_continuous_scale="Reds",
             )
 
+            # Improve contrast so higher counts appear darker
+            fig.update_coloraxes(cmin=0, cmax=counts["count"].max())
+
+            # Keep default USA view (includes AK/HI insets) and lock interactions
             fig.update_geos(projection_type="albers usa", fitbounds=False)
             fig.update_layout(height=500, margin=dict(l=10, r=10, t=50, b=10), dragmode=False)
 
