@@ -376,7 +376,7 @@ if "vehicle" in st.session_state:
         with right:
             st.subheader("Recalls")
             if recalls_df is None or recalls_df.empty:
-                st.info("No recalls returned by NHTSA recallsByVehicle.")
+                st.info("No recalls returned by NHTSA.")
             else:
                 cols = [
                     c
@@ -387,7 +387,7 @@ if "vehicle" in st.session_state:
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
-                st.info("No complaints returned by NHTSA complaintsByVehicle.")
+                st.info("No complaints returned by NHTSA.")
             else:
                 cols = [
                     c
