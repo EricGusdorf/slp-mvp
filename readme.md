@@ -111,8 +111,7 @@ This MVP keeps case strength intentionally transparent by surfacing:
 ## Symptom search (MVP)
 
 This MVP implements lexical semantic-ish search using **TF‑IDF + cosine similarity** over complaint text.
-- If enrichment is enabled, search uses the longer `description` text.
-- Otherwise it searches the shorter complaint `summary`.
+- Search uses the longer `description` text.
 
 Extensions (see below) include true embedding search.
 
@@ -140,7 +139,7 @@ Extensions (see below) include true embedding search.
 
 ## AI tools used
 
-ChatGPT 5.2 PRO
+ChatGPT 5.2 Pro
 
 ---
 
