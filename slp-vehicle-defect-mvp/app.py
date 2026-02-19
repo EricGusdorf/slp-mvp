@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from typing import Optional
 from urllib.parse import quote_plus
@@ -9,7 +10,12 @@ import requests
 import streamlit as st
 
 from slp_mvp.cache import DiskCache
-from slp_mvp.nhtsa import decode_vin, fetch_complaints_by_vehicle, fetch_recalls_by_vehicle, NHTSAError
+from slp_mvp.nhtsa import (
+    decode_vin,
+    fetch_complaints_by_vehicle,
+    fetch_recalls_by_vehicle,
+    NHTSAError,
+)
 from slp_mvp.analytics import (
     complaints_to_df,
     recalls_to_df,
@@ -100,6 +106,68 @@ def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
         return []
 
 
+def _normalize(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
+
+
+def _candidate_family_models(make: str, model: str, year: int) -> list[str]:
+    """
+    Minimal fallback:
+    If the selected/decoded model looks like a trim (contains digits like 535i),
+    try likely "family" models from vPIC for that make/year (e.g., 5-Series).
+    """
+    model = (model or "").strip()
+    make = (make or "").strip()
+    if not make or not model or not year:
+        return []
+
+    if not re.search(r"\d", model):
+        return []
+
+    models = vp_get_models_for_make_year(make, int(year))
+    if not models:
+        return []
+
+    first_digit_match = re.search(r"\d", model)
+    first_digit = first_digit_match.group(0) if first_digit_match else ""
+
+    digit_run_match = re.search(r"\d+", model)
+    digit_run = digit_run_match.group(0) if digit_run_match else ""
+
+    norm_model = _normalize(model)
+
+    scored: list[tuple[int, str]] = []
+    for m in models:
+        nm = _normalize(m)
+        score = 0
+
+        if "series" in nm:
+            score += 5
+        if first_digit and nm.startswith(first_digit):
+            score += 5
+        if digit_run and digit_run in nm:
+            score += 3
+        if norm_model and (norm_model in nm or nm in norm_model):
+            score += 1
+
+        if score > 0:
+            scored.append((score, m))
+
+    scored.sort(key=lambda x: (-x[0], x[1]))
+
+    out: list[str] = []
+    seen = set()
+    for _, m in scored:
+        ml = m.lower()
+        if ml not in seen:
+            out.append(m)
+            seen.add(ml)
+        if len(out) >= 5:
+            break
+
+    return out
+
+
 st.set_page_config(
     page_title="Strategic Legal Practices  |  Vehicle Defect Assessment Tool",
     layout="wide",
@@ -110,8 +178,6 @@ st.markdown(
     """
     <style>
     /* ---- Streamlit DataFrame (Glide Data Grid) scrollbar always visible ---- */
-
-    /* Make Glide scrollbars fully opaque (they're normally faded until hover) */
     div[data-testid="stDataFrame"] .gdg-scrollbar,
     div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal,
     div[data-testid="stDataFrame"] .gdg-scrollbar-vertical {
@@ -119,12 +185,10 @@ st.markdown(
         transition: none !important;
     }
 
-    /* Make the horizontal scrollbar area taller so it’s obvious */
     div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal {
         height: 14px !important;
     }
 
-    /* Optional: ensure the container still allows horizontal scrolling */
     div[data-testid="stDataFrame"] div[role="grid"] {
         overflow-x: auto !important;
     }
@@ -272,22 +336,41 @@ if analyze_clicked:
 
         v = st.session_state["vehicle"]
 
+        # Fetch with fallback model tries
         with st.spinner("Fetching NHTSA recalls + complaints..."):
-            recalls = []
-            complaints = []
-            recalls_err = None
-            complaints_err = None
+            recalls: list[dict] = []
+            complaints: list[dict] = []
+            recalls_err: Optional[str] = None
+            complaints_err: Optional[str] = None
 
-            try:
-                recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-            except NHTSAError as e:
-                recalls_err = str(e)
+            tried_models = [v["model"]]
+            for m in _candidate_family_models(v["make"], v["model"], v["year"]):
+                if m not in tried_models:
+                    tried_models.append(m)
 
-            try:
-                complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-            except NHTSAError as e:
-                complaints_err = str(e)
+            used_model = v["model"]
 
+            for m in tried_models:
+                used_model = m
+                recalls_err = None
+                complaints_err = None
+
+                try:
+                    recalls = fetch_recalls_by_vehicle(v["make"], m, v["year"], cache=cache)
+                except NHTSAError as e:
+                    recalls_err = str(e)
+                    recalls = []
+
+                try:
+                    complaints = fetch_complaints_by_vehicle(v["make"], m, v["year"], cache=cache)
+                except NHTSAError as e:
+                    complaints_err = str(e)
+                    complaints = []
+
+                if recalls or complaints:
+                    break
+
+        # Both endpoints failed => service issue
         if recalls_err and complaints_err:
             st.error(
                 "NHTSA services are currently unavailable for this lookup. "
@@ -297,6 +380,14 @@ if analyze_clicked:
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
             st.stop()
 
+        # If fallback found results, update model and inform user (blue)
+        if (used_model != v["model"]) and (recalls or complaints):
+            original_model = v["model"]
+            st.session_state["vehicle"]["model"] = used_model
+            st.info(f"No results for model '{original_model}'. Showing results for closest match '{used_model}'.")
+            v = st.session_state["vehicle"]
+
+        # No errors + still no data => treat as invalid/no data for this vehicle
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
             st.error(
                 f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
@@ -304,6 +395,7 @@ if analyze_clicked:
             )
             st.stop()
 
+        # Partial failures (keep blue)
         if recalls_err and not complaints_err:
             st.info("No recalls found; showing complaints only.")
         if complaints_err and not recalls_err:
@@ -332,8 +424,9 @@ if analyze_clicked:
     except NHTSAError as e:
         st.error(str(e))
         st.stop()
-    except Exception as e:
-        st.exception(e)
+    except Exception:
+        # Avoid showing redacted stack traces to end users
+        st.error("Unexpected error. Please try again.")
         st.stop()
 
 
@@ -420,15 +513,10 @@ if "vehicle" in st.session_state:
 
                 if "ReportReceivedDate" in recalls_display.columns:
                     recalls_display["ReportReceivedDate"] = (
-                        pd.to_datetime(
-                            recalls_display["ReportReceivedDate"],
-                            errors="coerce"
-                        )
-                        .dt.strftime("%m/%d/%Y")
+                        pd.to_datetime(recalls_display["ReportReceivedDate"], errors="coerce").dt.strftime("%m/%d/%Y")
                     )
 
                 st.dataframe(recalls_display.head(50), use_container_width=True, hide_index=True)
-
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
@@ -547,4 +635,7 @@ if "vehicle" in st.session_state:
             fig.update_layout(height=380, margin=dict(l=10, r=10, t=50, b=10))
             st.plotly_chart(fig, use_container_width=True)
 else:
-    st.info("Lookup by VIN or Make/Model/Year in the sidebar and click **Analyze vehicle**. Double click cells to enlarge them.")
+    st.info(
+        "Lookup by VIN or Make/Model/Year in the sidebar and click **Analyze vehicle**. "
+        "Double click cells to enlarge them."
+    )
