@@ -234,9 +234,22 @@ st.markdown(
     /* ---- Hide Streamlit header "link" (permalink) icons ---- */
     a.stMarkdownHeaderAnchor,
     a.header-anchor,
-    a[href^="#"][aria-label*="header" i],
-    a[href^="#"][aria-label*="link" i] {
+    h1 > a[href^="#"],
+    h2 > a[href^="#"],
+    h3 > a[href^="#"],
+    h4 > a[href^="#"],
+    h5 > a[href^="#"],
+    h6 > a[href^="#"],
+    h1 > a[href^="#"] svg,
+    h2 > a[href^="#"] svg,
+    h3 > a[href^="#"] svg,
+    h4 > a[href^="#"] svg,
+    h5 > a[href^="#"] svg,
+    h6 > a[href^="#"] svg {
         display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
     }
     </style>
     """,
