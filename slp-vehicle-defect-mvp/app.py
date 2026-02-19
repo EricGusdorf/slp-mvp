@@ -230,6 +230,14 @@ st.markdown(
     div[data-testid="stDataFrame"] div[role="grid"] {
         overflow-x: auto !important;
     }
+
+    /* ---- Hide Streamlit header "link" (permalink) icons ---- */
+    a.stMarkdownHeaderAnchor,
+    a.header-anchor,
+    a[href^="#"][aria-label*="header" i],
+    a[href^="#"][aria-label*="link" i] {
+        display: none !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
