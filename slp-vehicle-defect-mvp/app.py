@@ -846,7 +846,7 @@ if "analysis_vehicle" in st.session_state:
 
                         const maxThumbX = Math.max(0, barWidth - thumbWidth);
                         const x = maxScroll ? (scrollEl.scrollLeft / maxScroll) * maxThumbX : 0;
-                        thumbEl.style.transform = `translateX(${x}px)`;
+                        thumbEl.style.transform = `translateX(${{x}}px)`;
                       }}
 
                       scrollEl.addEventListener("scroll", updateThumb, {{ passive: true }});
