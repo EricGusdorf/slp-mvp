@@ -731,7 +731,7 @@ if "analysis_vehicle" in st.session_state:
             else:
                 cols = [
                     c
-                    for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"]
+                    for c in ["NHTSACampaignNumber", "ReportReceivedDate", "Component", "Summary"]
                     if c in recalls_df.columns
                 ]
 
