@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 from slp_mvp.cache import DiskCache
 from slp_mvp.nhtsa import (
@@ -742,7 +743,164 @@ if "analysis_vehicle" in st.session_state:
                     )
 
                 recalls_html = recalls_display.head(50).to_html(index=False, escape=True)
-                st.markdown(f'<div class="slp-recalls-scroll">{recalls_html}</div>', unsafe_allow_html=True)
+                components.html(
+                    f"""
+                    <div id="slp-recalls-container" style="width: 100%;">
+                      <style>
+                        :root {{
+                          --track: rgba(107, 114, 128, 0.18);
+                          --thumb: rgba(107, 114, 128, 0.65);
+                          --thumb-hover: rgba(107, 114, 128, 0.85);
+                          --border: rgba(107, 114, 128, 0.25);
+                          --header: rgba(107, 114, 128, 0.08);
+                        }}
+
+                        #slp-recalls-scroll {{
+                          overflow-x: scroll;   /* force scroll container */
+                          overflow-y: hidden;
+                          width: 100%;
+                          scrollbar-width: none; /* hide native scrollbar (Firefox) */
+                        }}
+                        #slp-recalls-scroll::-webkit-scrollbar {{
+                          height: 0px;          /* hide native scrollbar (WebKit) */
+                        }}
+
+                        #slp-recalls-scroll table {{
+                          border-collapse: collapse;
+                          width: max-content;
+                          min-width: 100%;
+                          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                          font-size: 0.9rem;
+                        }}
+                        #slp-recalls-scroll th,
+                        #slp-recalls-scroll td {{
+                          padding: 0.35rem 0.55rem;
+                          border-bottom: 1px solid var(--border);
+                          white-space: nowrap;
+                          vertical-align: top;
+                        }}
+                        #slp-recalls-scroll th {{
+                          font-weight: 600;
+                          background: var(--header);
+                          position: sticky;
+                          top: 0;
+                          z-index: 1;
+                        }}
+
+                        /* Always-visible custom scrollbar */
+                        #slp-recalls-bar {{
+                          height: 14px;
+                          background: var(--track);
+                          border-radius: 999px;
+                          margin-top: 6px;
+                          position: relative;
+                          user-select: none;
+                          touch-action: none;
+                        }}
+                        #slp-recalls-thumb {{
+                          height: 14px;
+                          background: var(--thumb);
+                          border-radius: 999px;
+                          width: 40px;
+                          transform: translateX(0px);
+                          position: absolute;
+                          left: 0;
+                          top: 0;
+                          cursor: pointer;
+                        }}
+                        #slp-recalls-thumb:hover {{
+                          background: var(--thumb-hover);
+                        }}
+                      </style>
+
+                      <div id="slp-recalls-scroll">{recalls_html}</div>
+                      <div id="slp-recalls-bar" aria-label="Horizontal scroll bar">
+                        <div id="slp-recalls-thumb" aria-label="Scroll thumb"></div>
+                      </div>
+                    </div>
+
+                    <script>
+                      const scrollEl = document.getElementById("slp-recalls-scroll");
+                      const barEl = document.getElementById("slp-recalls-bar");
+                      const thumbEl = document.getElementById("slp-recalls-thumb");
+
+                      function clamp(v, min, max) {{
+                        return Math.max(min, Math.min(max, v));
+                      }}
+
+                      function updateThumb() {{
+                        const scrollWidth = scrollEl.scrollWidth;
+                        const clientWidth = scrollEl.clientWidth;
+                        const maxScroll = Math.max(0, scrollWidth - clientWidth);
+                        const barWidth = barEl.clientWidth;
+
+                        if (maxScroll <= 0) {{
+                          barEl.style.display = "none";
+                          return;
+                        }}
+                        barEl.style.display = "block";
+
+                        const ratio = clientWidth / scrollWidth;
+                        const thumbWidth = clamp(Math.round(barWidth * ratio), 28, barWidth);
+                        thumbEl.style.width = thumbWidth + "px";
+
+                        const maxThumbX = Math.max(0, barWidth - thumbWidth);
+                        const x = maxScroll ? (scrollEl.scrollLeft / maxScroll) * maxThumbX : 0;
+                        thumbEl.style.transform = `translateX(${x}px)`;
+                      }}
+
+                      scrollEl.addEventListener("scroll", updateThumb, {{ passive: true }});
+                      window.addEventListener("resize", updateThumb);
+
+                      let dragging = false;
+                      let dragOffset = 0;
+
+                      thumbEl.addEventListener("pointerdown", (e) => {{
+                        dragging = true;
+                        thumbEl.setPointerCapture(e.pointerId);
+                        dragOffset = e.clientX - thumbEl.getBoundingClientRect().left;
+                      }});
+
+                      thumbEl.addEventListener("pointermove", (e) => {{
+                        if (!dragging) return;
+                        const barRect = barEl.getBoundingClientRect();
+                        const thumbRect = thumbEl.getBoundingClientRect();
+                        const barWidth = barRect.width;
+                        const thumbWidth = thumbRect.width;
+                        const maxThumbX = Math.max(0, barWidth - thumbWidth);
+                        let x = e.clientX - barRect.left - dragOffset;
+                        x = clamp(x, 0, maxThumbX);
+
+                        const maxScroll = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth);
+                        scrollEl.scrollLeft = maxThumbX ? (x / maxThumbX) * maxScroll : 0;
+                      }});
+
+                      thumbEl.addEventListener("pointerup", () => {{
+                        dragging = false;
+                      }});
+
+                      barEl.addEventListener("pointerdown", (e) => {{
+                        if (e.target === thumbEl) return;
+                        const barRect = barEl.getBoundingClientRect();
+                        const barWidth = barRect.width;
+                        const thumbWidth = thumbEl.getBoundingClientRect().width;
+                        const maxThumbX = Math.max(0, barWidth - thumbWidth);
+                        let x = e.clientX - barRect.left - thumbWidth / 2;
+                        x = clamp(x, 0, maxThumbX);
+
+                        const maxScroll = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth);
+                        scrollEl.scrollLeft = maxThumbX ? (x / maxThumbX) * maxScroll : 0;
+                      }});
+
+                      // Initial layout
+                      updateThumb();
+                      // A second update after layout settles (fonts/table rendering)
+                      setTimeout(updateThumb, 50);
+                    </script>
+                    """,
+                    height=420,
+                    scrolling=False,
+                )
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
