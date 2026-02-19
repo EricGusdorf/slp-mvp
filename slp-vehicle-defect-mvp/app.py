@@ -287,6 +287,23 @@ ENRICH_LIMIT = int(os.environ.get("SLP_ENRICH_LIMIT", "120"))
 ENRICH_WORKERS = int(os.environ.get("SLP_ENRICH_WORKERS", "6"))
 
 
+def _set_analysis_error(message: str, details: Optional[str] = None) -> None:
+    st.session_state["analysis_error"] = message
+    st.session_state["analysis_error_details"] = details
+
+    # Clear data so we never fall back to stale results from prior runs.
+    st.session_state["analysis_recalls_df"] = pd.DataFrame()
+    st.session_state["analysis_complaints_df"] = pd.DataFrame()
+    st.session_state["analysis_enrich_stats"] = {"requested": 0, "enriched": 0, "failed": 0}
+    st.session_state["analysis_raw_recalls"] = []
+    st.session_state["analysis_raw_complaints"] = []
+
+
+def _clear_analysis_error() -> None:
+    st.session_state["analysis_error"] = None
+    st.session_state["analysis_error_details"] = None
+
+
 def _vehicle_from_vin(vin: str):
     decoded = decode_vin(vin, cache=cache)
     make_ = (decoded.get("Make") or "").strip()
@@ -306,16 +323,27 @@ def _best_text_column(df: pd.DataFrame) -> str:
 # --- Run analysis ---
 if analyze_clicked:
     try:
+        _clear_analysis_error()
+
         if input_mode == "VIN":
             if not draft_vin:
-                st.error("Enter a VIN.")
+                _set_analysis_error("Enter a VIN.")
+                st.error(st.session_state["analysis_error"])
                 st.stop()
 
             make_, model_, year_, decoded, warn = _vehicle_from_vin(draft_vin)
             if warn:
                 st.info(f"VIN decode warning: {warn}")
             if not make_ or not model_ or not year_:
-                st.error("Could not decode make/model/year from VIN. Try Make/Model/Year input.")
+                st.session_state["analysis_vehicle"] = {
+                    "make": make_,
+                    "model": model_,
+                    "year": year_,
+                    "vin": draft_vin,
+                    "decoded": decoded,
+                }
+                _set_analysis_error("Could not decode make/model/year from VIN. Try Make/Model/Year input.")
+                st.error(st.session_state["analysis_error"])
                 st.stop()
 
             st.session_state["analysis_vehicle"] = {
@@ -328,7 +356,15 @@ if analyze_clicked:
 
         else:
             if not draft_make or not draft_model or not draft_year:
-                st.error("Enter make, model, and year.")
+                st.session_state["analysis_vehicle"] = {
+                    "make": draft_make,
+                    "model": draft_model,
+                    "year": int(draft_year) if draft_year else None,
+                    "vin": None,
+                    "decoded": None,
+                }
+                _set_analysis_error("Enter make, model, and year.")
+                st.error(st.session_state["analysis_error"])
                 st.stop()
 
             st.session_state["analysis_vehicle"] = {
@@ -377,12 +413,12 @@ if analyze_clicked:
 
         # Both endpoints failed => service issue
         if recalls_err and complaints_err:
-            st.error(
+            _set_analysis_error(
                 "NHTSA services are currently unavailable for this lookup. "
-                "Please confirm the vehicle exists and try again."
+                "Please confirm the vehicle exists and try again.",
+                details=f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}",
             )
-            with st.expander("Details"):
-                st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
+            st.error(st.session_state["analysis_error"])
             st.stop()
 
         # If fallback found results, update model and inform user (blue)
@@ -394,10 +430,11 @@ if analyze_clicked:
 
         # No errors + still no data => treat as invalid/no data for this vehicle
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
-            st.error(
+            _set_analysis_error(
                 f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
                 "Verify the make, model, and year."
             )
+            st.error(st.session_state["analysis_error"])
             st.stop()
 
         # Partial failures (keep blue)
@@ -427,11 +464,13 @@ if analyze_clicked:
         st.session_state["analysis_enrich_stats"] = enrich_stats
 
     except NHTSAError as e:
-        st.error(str(e))
+        _set_analysis_error(str(e))
+        st.error(st.session_state["analysis_error"])
         st.stop()
     except Exception:
         # Avoid showing redacted stack traces to end users
-        st.error("Unexpected error. Please try again.")
+        _set_analysis_error("Unexpected error. Please try again.")
+        st.error(st.session_state["analysis_error"])
         st.stop()
 
 
@@ -454,6 +493,15 @@ if "analysis_vehicle" in st.session_state:
     enrich_stats = st.session_state.get(
         "analysis_enrich_stats", {"requested": 0, "enriched": 0, "failed": 0}
     )
+
+    analysis_error = st.session_state.get("analysis_error")
+    analysis_error_details = st.session_state.get("analysis_error_details")
+    if analysis_error:
+        st.error(analysis_error)
+        if analysis_error_details:
+            with st.expander("Details"):
+                st.code(analysis_error_details)
+        st.stop()
 
     st.markdown(
         f"""
