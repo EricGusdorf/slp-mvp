@@ -136,7 +136,7 @@ Extensions (see below) include true embedding search.
 
 ## AI tools used
 
-None required for the prototype. (Optional future extension: embeddings for semantic search.)
+ChatGPT 5.2 PRO
 
 ---
 
