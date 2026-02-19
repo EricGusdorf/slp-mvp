@@ -100,7 +100,26 @@ def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
         return []
 
 
-st.set_page_config(page_title="Strategic Legal Practices  |  Vehicle Defect Assessment Tool", layout="wide")
+st.set_page_config(
+    page_title="Strategic Legal Practices  |  Vehicle Defect Assessment Tool",
+    layout="wide",
+)
+
+# Force horizontal scrollbar always visible on dataframes
+st.markdown(
+    """
+    <style>
+    div[data-testid="stDataFrame"] div[role="grid"] {
+        overflow-x: scroll !important;
+    }
+
+    div[data-testid="stDataFrame"] ::-webkit-scrollbar {
+        height: 12px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """
@@ -117,6 +136,7 @@ st.markdown(
 
 DEFAULT_CACHE_DIR = os.environ.get("SLP_CACHE_DIR", ".cache")
 cache = DiskCache(DEFAULT_CACHE_DIR)
+
 
 # --- Sidebar: vehicle selection ---
 with st.sidebar:
