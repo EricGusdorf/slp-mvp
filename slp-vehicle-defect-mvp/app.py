@@ -109,16 +109,30 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    div[data-testid="stDataFrame"] div[role="grid"] {
-        overflow-x: scroll !important;
+    /* ---- Streamlit DataFrame (Glide Data Grid) scrollbar always visible ---- */
+
+    /* Make Glide scrollbars fully opaque (they're normally faded until hover) */
+    div[data-testid="stDataFrame"] .gdg-scrollbar,
+    div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal,
+    div[data-testid="stDataFrame"] .gdg-scrollbar-vertical {
+        opacity: 1 !important;
+        transition: none !important;
     }
 
-    div[data-testid="stDataFrame"] ::-webkit-scrollbar {
-        height: 12px;
+    /* Make the horizontal scrollbar area taller so it’s obvious */
+    div[data-testid="stDataFrame"] .gdg-scrollbar-horizontal {
+        height: 14px !important;
+    }
+
+    /* Optional: ensure the container still allows horizontal scrolling */
+    div[data-testid="stDataFrame"] div[role="grid"] {
+        overflow-x: auto !important;
     }
     </style>
     """,
     unsafe_allow_html=True,
+)
+
 )
 
 st.markdown(
