@@ -31,7 +31,7 @@ st.markdown(
         SLP Vehicle Defect MVP
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # --- Cache ---
@@ -73,11 +73,11 @@ ENRICH_WORKERS = int(os.environ.get("SLP_ENRICH_WORKERS", "6"))
 
 def _vehicle_from_vin(vin: str):
     decoded = decode_vin(vin, cache=cache)
-    make = (decoded.get("Make") or "").strip()
-    model = (decoded.get("Model") or "").strip()
-    year = (decoded.get("ModelYear") or "").strip()
+    make_ = (decoded.get("Make") or "").strip()
+    model_ = (decoded.get("Model") or "").strip()
+    year_ = (decoded.get("ModelYear") or "").strip()
     warn = decoded.get("_vin_decode_warning")
-    return make, model, int(year) if str(year).isdigit() else None, decoded, warn
+    return make_, model_, int(year_) if str(year_).isdigit() else None, decoded, warn
 
 
 def _best_text_column(df: pd.DataFrame) -> str:
@@ -95,67 +95,75 @@ if analyze_clicked:
                 st.error("Enter a VIN.")
                 st.stop()
 
-            make, model, year, decoded, warn = _vehicle_from_vin(vin)
+            make_, model_, year_, decoded, warn = _vehicle_from_vin(vin)
             if warn:
                 st.warning(f"VIN decode warning: {warn}")
-            if not make or not model or not year:
+            if not make_ or not model_ or not year_:
                 st.error("Could not decode make/model/year from VIN. Try Make/Model/Year input.")
                 st.stop()
 
-            st.session_state["vehicle"] = {"make": make, "model": model, "year": year, "vin": vin, "decoded": decoded}
+            st.session_state["vehicle"] = {
+                "make": make_,
+                "model": model_,
+                "year": year_,
+                "vin": vin,
+                "decoded": decoded,
+            }
 
         else:
             if not make or not model or not year:
                 st.error("Enter make, model, and year.")
                 st.stop()
-            st.session_state["vehicle"] = {"make": make, "model": model, "year": int(year), "vin": None, "decoded": None}
+
+            st.session_state["vehicle"] = {
+                "make": make,
+                "model": model,
+                "year": int(year),
+                "vin": None,
+                "decoded": None,
+            }
 
         v = st.session_state["vehicle"]
+
+        # Fetch: handle per-endpoint errors so we can distinguish
+        # "invalid vehicle" (empty data) vs "NHTSA unavailable" (errors).
         with st.spinner("Fetching NHTSA recalls + complaints..."):
-    recalls = []
-    complaints = []
-    recalls_err = None
-    complaints_err = None
+            recalls = []
+            complaints = []
+            recalls_err = None
+            complaints_err = None
 
-    try:
-        recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-    except NHTSAError as e:
-        recalls_err = str(e)
+            try:
+                recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
+            except NHTSAError as e:
+                recalls_err = str(e)
 
-    try:
-        complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-    except NHTSAError as e:
-        complaints_err = str(e)
+            try:
+                complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
+            except NHTSAError as e:
+                complaints_err = str(e)
 
-# If BOTH endpoints failed, show a service error (not an invalid vehicle)
-if recalls_err and complaints_err:
-    st.error("NHTSA services are currently unavailable for this lookup. Please try again.")
-    with st.expander("Details"):
-        st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
-    st.stop()
+        # If BOTH endpoints failed, show a service error (not an invalid vehicle).
+        if recalls_err and complaints_err:
+            st.error("NHTSA services are currently unavailable for this lookup. Please try again.")
+            with st.expander("Details"):
+                st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
+            st.stop()
 
-# If requests succeeded but returned no data, treat as invalid vehicle
-if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
-    st.error(
-        f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
-        "Verify the make, model, and year."
-    )
-    st.stop()
-
-# If one failed but the other succeeded, proceed with what we have (minimal MVP)
-if recalls_err and not complaints_err:
-    st.warning("Recalls lookup failed; showing complaints only.")
-if complaints_err and not recalls_err:
-    st.warning("Complaints lookup failed; showing recalls only.")
-
-        # Validate vehicle existence
-        if not recalls and not complaints:
+        # If requests succeeded but returned no data, treat as invalid vehicle.
+        if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
             st.error(
                 f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
                 "Verify the make, model, and year."
             )
             st.stop()
-            
+
+        # Partial failure: continue with warning (minimal MVP).
+        if recalls_err and not complaints_err:
+            st.warning("Recalls lookup failed; showing complaints only.")
+        if complaints_err and not recalls_err:
+            st.warning("Complaints lookup failed; showing recalls only.")
+
         st.session_state["raw_recalls"] = recalls
         st.session_state["raw_complaints"] = complaints
 
@@ -183,6 +191,7 @@ if complaints_err and not recalls_err:
         st.exception(e)
         st.stop()
 
+
 # --- Display results if available ---
 if "vehicle" in st.session_state:
     v = st.session_state["vehicle"]
@@ -193,7 +202,7 @@ if "vehicle" in st.session_state:
     st.subheader(f"{v['year']} {v['make']} {v['model']}")
     if v.get("vin"):
         st.caption(f"VIN: `{v['vin']}`")
-    # KPIs row
+
     sev = severity_summary(complaints_df)
     k1, k2, k3, k4, k5, k6 = st.columns(6)
     k1.metric("Complaints", f"{len(complaints_df):,}")
@@ -225,7 +234,11 @@ if "vehicle" in st.session_state:
             if recalls_df is None or recalls_df.empty:
                 st.info("No recalls returned by NHTSA recallsByVehicle.")
             else:
-                cols = [c for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"] if c in recalls_df.columns]
+                cols = [
+                    c
+                    for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"]
+                    if c in recalls_df.columns
+                ]
                 st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
 
         with st.expander("View complaints (first 100)"):
@@ -295,7 +308,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-                   # --- Map ---
+    # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
             st.warning(
@@ -304,10 +317,7 @@ if "vehicle" in st.session_state:
         else:
             geo = complaints_df.dropna(subset=["stateAbbreviation"]).copy()
             counts = (
-                geo["stateAbbreviation"]
-                .value_counts()
-                .rename_axis("state")
-                .reset_index(name="count")
+                geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
             )
 
             fig = px.choropleth(
@@ -319,7 +329,6 @@ if "vehicle" in st.session_state:
                 title="Complaints by state (from NHTSA consumer location)",
             )
 
-            # Keep the default USA view (includes AK/HI insets) and lock interactions
             fig.update_geos(projection_type="albers usa", fitbounds=False)
             fig.update_layout(height=500, margin=dict(l=10, r=10, t=50, b=10), dragmode=False)
 
@@ -340,7 +349,6 @@ if "vehicle" in st.session_state:
     with tabs[3]:
         st.write("Complaint volume over time (by complaint filed date).")
 
-        # Filter by component to support make/model/component trend investigation.
         comp_df = component_frequency(complaints_df)
         components = ["All components"]
         if not comp_df.empty:
@@ -349,7 +357,6 @@ if "vehicle" in st.session_state:
         selected = st.selectbox("Component", components, index=0)
         df_for_trend = complaints_df
         if selected != "All components" and "components" in complaints_df.columns:
-            # Match whole component tokens in the pipe-delimited components field
             needle = f"|{selected}|"
             s = "|" + complaints_df["components"].fillna("").astype(str) + "|"
             df_for_trend = complaints_df[s.str.contains(needle, case=False, regex=False)]
