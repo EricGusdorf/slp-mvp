@@ -202,7 +202,7 @@ if "vehicle" in st.session_state:
         <div style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem;">
             {v['year']} 
             <span style="color:#6b7280; font-weight:500;">
-                e.g., {v['make']} {v['model']}
+                {v['make']} {v['model']}
             </span>
         </div>
         """,
