@@ -270,6 +270,44 @@ st.markdown(
         font-weight: 600;
         margin: 0 0 0.5rem 0;
     }
+
+    /* ---- Recalls table (always-visible horizontal scrollbar) ---- */
+    .slp-recalls-scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-gutter: stable;
+        padding-bottom: 6px; /* keeps bar from feeling clipped */
+    }
+    .slp-recalls-scroll table {
+        border-collapse: collapse;
+        width: max-content;
+        min-width: 100%;
+    }
+    .slp-recalls-scroll th,
+    .slp-recalls-scroll td {
+        padding: 0.35rem 0.55rem;
+        border-bottom: 1px solid rgba(107, 114, 128, 0.25);
+        white-space: nowrap;
+        vertical-align: top;
+        font-size: 0.9rem;
+    }
+    .slp-recalls-scroll th {
+        font-weight: 600;
+        background: rgba(107, 114, 128, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .slp-recalls-scroll *::-webkit-scrollbar {
+        height: 14px;
+    }
+    .slp-recalls-scroll *::-webkit-scrollbar-thumb {
+        background: rgba(107, 114, 128, 0.55);
+        border-radius: 999px;
+    }
+    .slp-recalls-scroll *::-webkit-scrollbar-track {
+        background: rgba(107, 114, 128, 0.15);
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -703,13 +741,8 @@ if "analysis_vehicle" in st.session_state:
                         pd.to_datetime(recalls_display["ReportReceivedDate"], errors="coerce").dt.strftime("%m/%d/%Y")
                     )
 
-                st.dataframe(
-                    recalls_display.head(50),
-                    use_container_width=True,
-                    hide_index=True,
-                    height=360,
-                    key="recalls_table",
-                )
+                recalls_html = recalls_display.head(50).to_html(index=False, escape=True)
+                st.markdown(f'<div class="slp-recalls-scroll">{recalls_html}</div>', unsafe_allow_html=True)
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
