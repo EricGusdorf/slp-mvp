@@ -383,7 +383,20 @@ if "vehicle" in st.session_state:
                     for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"]
                     if c in recalls_df.columns
                 ]
-                st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
+
+                recalls_display = recalls_df[cols].copy()
+
+                if "ReportReceivedDate" in recalls_display.columns:
+                    recalls_display["ReportReceivedDate"] = (
+                        pd.to_datetime(
+                            recalls_display["ReportReceivedDate"],
+                            errors="coerce"
+                        )
+                        .dt.strftime("%m/%d/%Y")
+                    )
+
+                st.dataframe(recalls_display.head(50), use_container_width=True, hide_index=True)
+
 
         with st.expander("View complaints (all)"):
             if complaints_df is None or complaints_df.empty:
