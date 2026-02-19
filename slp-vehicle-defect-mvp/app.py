@@ -110,45 +110,60 @@ def _normalize(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
 
 
-def _candidate_family_models(make: str, model: str, year: int) -> list[str]:
+def _candidate_models(make: str, model: str, year: int) -> list[str]:
     """
-    Minimal fallback:
-    If the selected/decoded model looks like a trim (contains digits like 535i),
-    try likely "family" models from vPIC for that make/year (e.g., 5-Series).
+    NHTSA's `*ByVehicle` endpoints can be picky about exact model strings.
+    If the chosen model returns no data, try a few close vPIC variants for the same make/year.
     """
     model = (model or "").strip()
     make = (make or "").strip()
     if not make or not model or not year:
         return []
 
-    if not re.search(r"\d", model):
-        return []
-
     models = vp_get_models_for_make_year(make, int(year))
     if not models:
         return []
 
+    norm_model = _normalize(model)
+    if not norm_model:
+        return []
+
+    has_digits = bool(re.search(r"\d", model))
     first_digit_match = re.search(r"\d", model)
     first_digit = first_digit_match.group(0) if first_digit_match else ""
-
     digit_run_match = re.search(r"\d+", model)
     digit_run = digit_run_match.group(0) if digit_run_match else ""
 
-    norm_model = _normalize(model)
+    tok_model = (model.lower().split() or [""])[0]
 
     scored: list[tuple[int, str]] = []
     for m in models:
+        if m.lower() == model.lower():
+            continue
+
         nm = _normalize(m)
         score = 0
 
-        if "series" in nm:
-            score += 5
-        if first_digit and nm.startswith(first_digit):
-            score += 5
-        if digit_run and digit_run in nm:
-            score += 3
-        if norm_model and (norm_model in nm or nm in norm_model):
-            score += 1
+        # General similarity (helps cases like "Accord" vs "Accord Hybrid")
+        if nm == norm_model:
+            score += 10
+        if norm_model in nm:
+            score += 6
+        if nm in norm_model:
+            score += 2
+
+        tok_m = (m.lower().split() or [""])[0]
+        if tok_model and tok_m and tok_model == tok_m:
+            score += 2
+
+        # Digit-heavy trims benefit from extra heuristics (e.g., "535i" → "5-Series")
+        if has_digits:
+            if "series" in nm:
+                score += 5
+            if first_digit and nm.startswith(first_digit):
+                score += 5
+            if digit_run and digit_run in nm:
+                score += 3
 
         if score > 0:
             scored.append((score, m))
@@ -162,7 +177,7 @@ def _candidate_family_models(make: str, model: str, year: int) -> list[str]:
         if ml not in seen:
             out.append(m)
             seen.add(ml)
-        if len(out) >= 5:
+        if len(out) >= 6:
             break
 
     return out
@@ -385,7 +400,7 @@ if analyze_clicked:
             complaints_err: Optional[str] = None
 
             tried_models = [v["model"]]
-            for m in _candidate_family_models(v["make"], v["model"], v["year"]):
+            for m in _candidate_models(v["make"], v["model"], v["year"]):
                 if m not in tried_models:
                     tried_models.append(m)
 
