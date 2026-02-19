@@ -212,7 +212,7 @@ if analyze_clicked:
 
             make_, model_, year_, decoded, warn = _vehicle_from_vin(vin)
             if warn:
-                st.warning(f"VIN decode warning: {warn}")
+                st.info(f"VIN decode warning: {warn}")
             if not make_ or not model_ or not year_:
                 st.error("Could not decode make/model/year from VIN. Try Make/Model/Year input.")
                 st.stop()
@@ -273,9 +273,9 @@ if analyze_clicked:
             st.stop()
 
         if recalls_err and not complaints_err:
-            st.warning("No recalls found; showing complaints only.")
+            st.info("No recalls found; showing complaints only.")
         if complaints_err and not recalls_err:
-            st.warning("No complaints found; showing recalls only.")
+            st.info("No complaints found; showing recalls only.")
 
         st.session_state["raw_recalls"] = recalls
         st.session_state["raw_complaints"] = complaints
@@ -449,7 +449,7 @@ if "vehicle" in st.session_state:
     # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
-            st.warning("No complaint location data available from NHTSA.")
+            st.info("No complaint location data available from NHTSA.")
         else:
             geo = complaints_df.dropna(subset=["stateAbbreviation"]).copy()
             counts = geo["stateAbbreviation"].value_counts().rename_axis("state").reset_index(name="count")
