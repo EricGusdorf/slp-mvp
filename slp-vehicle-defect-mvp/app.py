@@ -114,7 +114,14 @@ if analyze_clicked:
         with st.spinner("Fetching NHTSA recalls + complaints..."):
             recalls = fetch_recalls_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
             complaints = fetch_complaints_by_vehicle(v["make"], v["model"], v["year"], cache=cache)
-
+        # Validate vehicle existence
+        if not recalls and not complaints:
+            st.error(
+                f"No NHTSA data found for {v['year']} {v['make']} {v['model']}. "
+                "Verify the make, model, and year."
+            )
+            st.stop()
+            
         st.session_state["raw_recalls"] = recalls
         st.session_state["raw_complaints"] = complaints
 
