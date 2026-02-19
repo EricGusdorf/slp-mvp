@@ -547,4 +547,4 @@ if "vehicle" in st.session_state:
             fig.update_layout(height=380, margin=dict(l=10, r=10, t=50, b=10))
             st.plotly_chart(fig, use_container_width=True)
 else:
-    st.info("Lookup by VIN or Make/Model/Year in the sidebar and click **Analyze vehicle**.")
+    st.info("Lookup by VIN or Make/Model/Year in the sidebar and click **Analyze vehicle**. Double click cells to enlarge them.")
