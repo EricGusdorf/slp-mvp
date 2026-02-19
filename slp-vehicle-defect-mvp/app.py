@@ -254,7 +254,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-               # --- Map ---
+                   # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
             st.warning(
@@ -278,18 +278,9 @@ if "vehicle" in st.session_state:
                 title="Complaints by state (from NHTSA consumer location)",
             )
 
-            fig.update_layout(
-                height=500,
-                margin=dict(l=10, r=10, t=50, b=10),
-                dragmode=False,
-            )
-
-            # Slightly zoomed out so AK + HI remain visible
-            fig.update_geos(
-                fitbounds=False,
-                visible=False,
-                projection_scale=0.9
-            )
+            # Keep the default USA view (includes AK/HI insets) and lock interactions
+            fig.update_geos(projection_type="albers usa", fitbounds=False)
+            fig.update_layout(height=500, margin=dict(l=10, r=10, t=50, b=10), dragmode=False)
 
             config = {
                 "scrollZoom": False,
