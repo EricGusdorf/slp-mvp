@@ -22,24 +22,34 @@ from slp_mvp.text_search import build_index, search as search_index
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
+@st.cache_data(ttl=7 * 24 * 3600)
 def vp_get_all_makes() -> list[str]:
-    url = "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json"
-    r = requests.get(url, timeout=20)
-    r.raise_for_status()
-    data = r.json()
-    makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
-    return sorted({m for m in makes if m})
+    try:
+        url = "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json"
+        r = requests.get(url, timeout=20)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        makes = [row.get("Make_Name", "").strip() for row in (data.get("Results") or [])]
+        return sorted({m for m in makes if m})
+    except Exception:
+        return []
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
 def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
-    make_q = quote_plus(make.strip())
-    url = f"https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/{make_q}/modelyear/{int(year)}?format=json"
-    r = requests.get(url, timeout=20)
-    r.raise_for_status()
-    data = r.json()
-    models = [row.get("Model_Name", "").strip() for row in (data.get("Results") or [])]
-    return sorted({m for m in models if m})
+    try:
+        make_q = quote_plus(make.strip())
+        url = f"https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/{make_q}/modelyear/{int(year)}?format=json"
+        r = requests.get(url, timeout=20)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        models = [row.get("Model_Name", "").strip() for row in (data.get("Results") or [])]
+        return sorted({m for m in models if m})
+    except Exception:
+        return []
+
 
 
 st.set_page_config(page_title="SLP Vehicle Defect MVP", layout="wide")
