@@ -272,6 +272,22 @@ st.markdown(
         margin: 0 0 0.5rem 0;
     }
 
+    /* ---- Sidebar footer ---- */
+    section[data-testid="stSidebar"] .slp-sidebar-footer {
+        position: sticky;
+        bottom: 0;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        font-size: 0.85rem;
+        color: rgba(107, 114, 128, 0.95);
+        background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.92) 30%,
+            rgba(255, 255, 255, 1) 100%
+        );
+    }
+
     /* ---- Recalls table (always-visible horizontal scrollbar) ---- */
     .slp-recalls-scroll {
         overflow-x: auto;
@@ -434,6 +450,11 @@ with st.sidebar:
 
         st.divider()
         analyze_clicked = st.button("Analyze vehicle", type="primary")
+
+    st.markdown(
+        '<div class="slp-sidebar-footer">Created by Eric Gusdorf - Jr. Data Engineer Applicant</div>',
+        unsafe_allow_html=True,
+    )
 
 # Enrichment always on (no UI toggle)
 enrich = True
