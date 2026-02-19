@@ -333,71 +333,71 @@ if "vehicle" in st.session_state:
     tabs = st.tabs(["Summary", "Search", "Map", "Trends"])
 
     # --- Summary ---
-with tabs[0]:
-    left, right = st.columns([1, 1])
-    with left:
-        st.subheader("Defect patterns")
-        comp_df = component_frequency(complaints_df)
-        if comp_df.empty:
-            st.info("No complaint component labels returned for this vehicle.")
-        else:
-            top_n = comp_df.head(10)
-
-            fig = px.bar(
-                top_n,
-                x="count",
-                y="component",
-                orientation="h",
-                title="Top complaint components",
-            )
-            fig.update_layout(height=360, margin=dict(l=10, r=10, t=45, b=10))
-            st.plotly_chart(fig, use_container_width=True)
-
-            # Rename and format columns for clarity
-            display_df = top_n[["component", "count", "share"]].copy()
-            display_df = display_df.rename(columns={
-                "component": "Component",
-                "count": "Complaint Count",
-                "share": "Share of Total Complaints (%)",
-            })
-
-            display_df["Share of Total Complaints (%)"] = (
-                display_df["Share of Total Complaints (%)"] * 100
-            ).round(1)
-
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
-
-    with right:
-        st.subheader("Recalls")
-        if recalls_df is None or recalls_df.empty:
-            st.info("No recalls returned by NHTSA recallsByVehicle.")
-        else:
-            cols = [
-                c
-                for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"]
-                if c in recalls_df.columns
-            ]
-            st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
-
-    with st.expander("View complaints (all)"):
-        if complaints_df is None or complaints_df.empty:
-            st.info("No complaints returned by NHTSA complaintsByVehicle.")
-        else:
-            cols = [
-                c
-                for c in [
-                    "odiNumber",
-                    "dateComplaintFiled",
-                    "components",
-                    "crash",
-                    "fire",
-                    "numberOfInjuries",
-                    "numberOfDeaths",
-                    "summary",
+    with tabs[0]:
+        left, right = st.columns([1, 1])
+        with left:
+            st.subheader("Defect patterns")
+            comp_df = component_frequency(complaints_df)
+            if comp_df.empty:
+                st.info("No complaint component labels returned for this vehicle.")
+            else:
+                top_n = comp_df.head(10)
+    
+                fig = px.bar(
+                    top_n,
+                    x="count",
+                    y="component",
+                    orientation="h",
+                    title="Top complaint components",
+                )
+                fig.update_layout(height=360, margin=dict(l=10, r=10, t=45, b=10))
+                st.plotly_chart(fig, use_container_width=True)
+    
+                # Rename and format columns for clarity
+                display_df = top_n[["component", "count", "share"]].copy()
+                display_df = display_df.rename(columns={
+                    "component": "Component",
+                    "count": "Complaint Count",
+                    "share": "Share of Total Complaints (%)",
+                })
+    
+                display_df["Share of Total Complaints (%)"] = (
+                    display_df["Share of Total Complaints (%)"] * 100
+                ).round(1)
+    
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+    
+        with right:
+            st.subheader("Recalls")
+            if recalls_df is None or recalls_df.empty:
+                st.info("No recalls returned by NHTSA recallsByVehicle.")
+            else:
+                cols = [
+                    c
+                    for c in ["NHTSACampaignNumber", "Component", "Summary", "ReportReceivedDate"]
+                    if c in recalls_df.columns
                 ]
-                if c in complaints_df.columns
-            ]
-            st.dataframe(complaints_df[cols], use_container_width=True, hide_index=True)
+                st.dataframe(recalls_df[cols].head(50), use_container_width=True, hide_index=True)
+    
+        with st.expander("View complaints (all)"):
+            if complaints_df is None or complaints_df.empty:
+                st.info("No complaints returned by NHTSA complaintsByVehicle.")
+            else:
+                cols = [
+                    c
+                    for c in [
+                        "odiNumber",
+                        "dateComplaintFiled",
+                        "components",
+                        "crash",
+                        "fire",
+                        "numberOfInjuries",
+                        "numberOfDeaths",
+                        "summary",
+                    ]
+                    if c in complaints_df.columns
+                ]
+                st.dataframe(complaints_df[cols], use_container_width=True, hide_index=True)
 
     # --- Search ---
     with tabs[1]:
