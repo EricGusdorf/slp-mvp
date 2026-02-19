@@ -778,8 +778,9 @@ if "analysis_vehicle" in st.session_state:
                           --thumb: rgba(96, 165, 250, 0.70);
                           --thumb-hover: rgba(59, 130, 246, 0.90);
                           --border: rgba(96, 165, 250, 0.30);
-                          --header: rgb(219, 234, 254);            /* solid (not transparent) */
-                          --row-alt: rgba(96, 165, 250, 0.07);
+                          --header: rgb(191, 219, 254);            /* slightly darker header */
+                          --cell: rgb(239, 246, 255);              /* solid, lighter body cells */
+                          --row-alt: rgb(219, 234, 254);           /* subtle solid striping */
                           --text: rgba(30, 64, 175, 1);             /* blue-800-ish */
                           --text-muted: rgba(29, 78, 216, 0.95);     /* blue-700-ish */
                         }}
@@ -810,6 +811,7 @@ if "analysis_vehicle" in st.session_state:
                           vertical-align: top;
                           text-align: left;
                           color: var(--text);
+                          background: var(--cell);
                         }}
                         #slp-recalls-scroll th {{
                           font-weight: 600;
