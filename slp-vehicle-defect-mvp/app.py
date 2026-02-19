@@ -254,7 +254,7 @@ if "vehicle" in st.session_state:
                 ]
                 st.dataframe(out[keep], use_container_width=True, hide_index=True)
 
-        # --- Map ---
+            # --- Map ---
     with tabs[2]:
         if "stateAbbreviation" not in complaints_df.columns or complaints_df["stateAbbreviation"].dropna().empty:
             st.warning(
@@ -284,11 +284,11 @@ if "vehicle" in st.session_state:
                 dragmode=False,
             )
 
+            # Slightly zoomed out so AK + HI remain visible
             fig.update_geos(
                 fitbounds=False,
                 visible=False,
-                projection_scale=1,
-                center=dict(lat=39.5, lon=-98.35),
+                projection_scale=0.9
             )
 
             config = {
@@ -301,8 +301,7 @@ if "vehicle" in st.session_state:
             st.dataframe(
                 counts.sort_values("count", ascending=False).head(25),
                 use_container_width=True,
-                hide_index=True,
-            )
+                hide_in_
 
 
     # --- Trends ---
