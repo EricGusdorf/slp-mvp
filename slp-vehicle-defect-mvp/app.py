@@ -121,63 +121,65 @@ cache = DiskCache(DEFAULT_CACHE_DIR)
 # --- Sidebar: vehicle selection ---
 with st.sidebar:
     st.header("Vehicle input")
-    input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
 
-    vin = ""
-    make = ""
-    model = ""
-    year: Optional[int] = None
+    with st.form("vehicle_form", clear_on_submit=False):
+        input_mode = st.radio("Lookup by", ["VIN", "Make / Model / Year"], horizontal=False)
 
-    if input_mode == "VIN":
-        vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
-    else:
-        year = st.number_input(
-            "Model year",
-            min_value=1950,
-            max_value=datetime.now().year + 1,
-            value=st.session_state.get("year", 2021),
-            step=1,
-            key="year",
-        )
+        vin = ""
+        make = ""
+        model = ""
+        year: Optional[int] = None
 
-        makes = vp_get_all_makes()
+        if input_mode == "VIN":
+            vin = st.text_input("VIN (17 chars)", value="", placeholder="e.g., 1HGCV1F56MA123456")
+        else:
+            year = st.number_input(
+                "Model year",
+                min_value=1950,
+                max_value=datetime.now().year + 1,
+                value=st.session_state.get("year", 2021),
+                step=1,
+                key="year",
+            )
 
-        make = st.selectbox(
-            "Make",
-            options=[""] + makes,
-            index=0,
-            key="make",
-        )
+            makes = vp_get_all_makes()
 
-        # Reset model only when make changes (not when year changes)
-        prev_make = st.session_state.get("_prev_make", "")
-        if make != prev_make:
-            st.session_state["model"] = ""
-            st.session_state["_prev_make"] = make
+            make = st.selectbox(
+                "Make",
+                options=[""] + makes,
+                index=0,
+                key="make",
+            )
 
-        models: list[str] = []
-        if make:
-            models = vp_get_models_for_make_year(make, int(year))
+            # Only reset model when make changes
+            prev_make = st.session_state.get("_prev_make", "")
+            if make != prev_make:
+                st.session_state["model"] = ""
+                st.session_state["_prev_make"] = make
 
-        # Keep current model if still valid for this make+year; otherwise clear
-        current_model = st.session_state.get("model", "")
-        if current_model and current_model not in models:
-            st.session_state["model"] = ""
+            models: list[str] = []
+            if make:
+                models = vp_get_models_for_make_year(make, int(year))
 
-        options = [""] + models
-        selected_model = st.session_state.get("model", "")
-        model_index = options.index(selected_model) if selected_model in options else 0
+            # Keep current model if still valid; otherwise clear
+            current_model = st.session_state.get("model", "")
+            if current_model and current_model not in models:
+                st.session_state["model"] = ""
 
-        model = st.selectbox(
-            "Model",
-            options=options,
-            index=model_index,
-            key="model",
-            disabled=(not make),
-        )
+            options = [""] + models
+            selected_model = st.session_state.get("model", "")
+            model_index = options.index(selected_model) if selected_model in options else 0
 
-    st.divider()
-    analyze_clicked = st.button("Analyze vehicle", type="primary")
+            model = st.selectbox(
+                "Model",
+                options=options,
+                index=model_index,
+                key="model",
+                disabled=(not make),
+            )
+
+        analyze_clicked = st.form_submit_button("Analyze vehicle", type="primary")
+
 
 # Enrichment always on (no UI toggle)
 enrich = True
