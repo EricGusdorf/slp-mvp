@@ -100,7 +100,7 @@ def vp_get_models_for_make_year(make: str, year: int) -> list[str]:
         return []
 
 
-st.set_page_config(page_title="Strategic Legal Practices | Vehicle Defect Assessment Tool", layout="wide")
+st.set_page_config(page_title="Strategic Legal Practices  |  Vehicle Defect Assessment Tool", layout="wide")
 
 st.markdown(
     """
@@ -109,7 +109,7 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 0.5rem;
     ">
-        Strategic Legal Practices | Vehicle Defect Assessment Tool
+        Strategic Legal Practices  |  Vehicle Defect Assessment Tool
     </div>
     """,
     unsafe_allow_html=True,
