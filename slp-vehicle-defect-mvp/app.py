@@ -21,7 +21,11 @@ from slp_mvp.text_search import build_index, search as search_index
 
 st.set_page_config(page_title="SLP Vehicle Defect MVP", layout="wide")
 
-st.title("SLP Vehicle Defect MVP")
+st.markdown(
+    "<h1 style='margin-bottom: 0.5rem;'>SLP Vehicle Defect MVP</h1>",
+    unsafe_allow_html=True
+)
+
 st.caption("NHTSA recalls + consumer complaints for quick defect pattern review.")
 
 # --- Cache ---
