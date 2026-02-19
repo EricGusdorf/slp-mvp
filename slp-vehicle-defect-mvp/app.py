@@ -145,10 +145,14 @@ if analyze_clicked:
 
         # If BOTH endpoints failed, show a service error (not an invalid vehicle).
         if recalls_err and complaints_err:
-            st.error("NHTSA services are currently unavailable for this lookup. Please try again.")
+            st.error(
+                "NHTSA services are currently unavailable for this lookup. "
+                "Please try again and confirm the vehicle make, model, and year are spelled correctly."
+            )
             with st.expander("Details"):
                 st.code(f"recalls error:\n{recalls_err}\n\ncomplaints error:\n{complaints_err}")
             st.stop()
+
 
         # If requests succeeded but returned no data, treat as invalid vehicle.
         if (recalls_err is None) and (complaints_err is None) and (not recalls) and (not complaints):
