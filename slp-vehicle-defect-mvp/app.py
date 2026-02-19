@@ -267,7 +267,7 @@ if analyze_clicked:
 
         # Partial failure: continue with warning (minimal MVP).
         if recalls_err and not complaints_err:
-            st.warning("Recalls lookup failed; showing complaints only. Vehicle may not exist")
+            st.warning("Recalls lookup failed; showing complaints only. Vehicle may not exist.")
         if complaints_err and not recalls_err:
             st.warning("Complaints lookup failed; showing recalls only.")
 
