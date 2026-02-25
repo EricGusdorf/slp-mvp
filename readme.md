@@ -3,6 +3,8 @@ Made by Eric Gusdorf
 # Vehicle Defect Assessment Tool — MVP
 # SLP Vehicle Defect Analyzer — MVP
 
+# SLP Vehicle Defect Analyzer — MVP
+
 
 A working prototype that helps attorneys quickly assess **vehicle defect patterns** and **case strength** using public NHTSA data (recalls + consumer complaints).
 
