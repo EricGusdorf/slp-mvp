@@ -1,9 +1,8 @@
 """
 Compatibility entrypoint.
 
-Your host is configured to run `slp-vehicle-defect-mvp/app.py`.
-The real app lives in `vehicle-defect-mvp/app.py`, so we forward execution
-without requiring any hosting config changes.
+This file exists so hosting configurations that point at this folder continue
+to work, while the actual app code lives elsewhere in the repo.
 """
 
 from __future__ import annotations

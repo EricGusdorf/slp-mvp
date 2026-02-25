@@ -1,18 +1,14 @@
 Made by Eric Gusdorf
 
 # Vehicle Defect Assessment Tool — MVP
-# SLP Vehicle Defect Analyzer — MVP
 
-# SLP Vehicle Defect Analyzer — MVP
+A Streamlit prototype for exploring **vehicle defect patterns** using public NHTSA data (recalls + consumer complaints).
 
-
-A working prototype that helps attorneys quickly assess **vehicle defect patterns** and **case strength** using public NHTSA data (recalls + consumer complaints).
-
-This repo is designed to satisfy the take‑home requirements:
+Core features:
 - Surface relevant **recalls** + **consumer complaints**
 - Identify defect **patterns** (components failing most often)
 - Highlight **severity indicators** (crashes, fires, injuries, deaths)
-- Search for **similar cases by symptom text**
+- Search complaints by **symptom text**
 - Provide **geographic context**
 - Show **complaint volume trends over time**
 
@@ -106,9 +102,9 @@ export VDA_CACHE_DIR=/tmp/vehicle_defect_cache
 
 ---
 
-## Case strength (MVP)
+## Summary signals (MVP)
 
-This MVP keeps case strength intentionally transparent by surfacing:
+This MVP keeps its scoring/interpretation intentionally transparent by surfacing:
 - Recall presence
 - Complaint volume
 - Severity indicators (crash/fire/injury/death counts)
@@ -142,7 +138,7 @@ Extensions (see below) include true embedding search.
   - cross‑vehicle comparisons and “similar vehicle families” searches
 - Add true **embedding search** (local model or API) + component-aware reranking.
 - Add manufacturer communications (TSBs), investigations, and recall remedy effectiveness.
-- Add an “intake memo” export (PDF/Word) summarizing findings for the file.
+- Add a report export (PDF/Word) summarizing findings.
 - Add multi-vehicle dashboards (e.g., “top emerging issues across Honda 2019–2022”).
 
 ---
@@ -155,6 +151,6 @@ ChatGPT 5.2 Pro, Cursor
 
 ## Disclaimer
 
-This prototype is for internal triage and product exploration only and does not constitute legal advice.
+This prototype is for informational purposes and product exploration only.
 
 
