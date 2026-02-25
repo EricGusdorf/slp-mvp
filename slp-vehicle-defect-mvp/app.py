@@ -1,3 +1,26 @@
+"""
+Compatibility entrypoint.
+
+Some hosting platforms are configured to run `slp-vehicle-defect-mvp/app.py`.
+The app source lives in `vehicle-defect-mvp/app.py`, so we forward execution.
+"""
+
+from __future__ import annotations
+
+import runpy
+import sys
+from pathlib import Path
+
+
+REAL_APP = Path(__file__).resolve().parents[1] / "vehicle-defect-mvp" / "app.py"
+REAL_APP_DIR = REAL_APP.parent
+
+# Ensure imports like `vehicle_defect_mvp.*` resolve the same way they would
+# when running the real app directly.
+sys.path.insert(0, str(REAL_APP_DIR))
+
+runpy.run_path(str(REAL_APP), run_name="__main__")
+
 import os
 import re
 from datetime import datetime
@@ -10,22 +33,22 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
-from vehicle_defect_mvp.cache import DiskCache
-from vehicle_defect_mvp.nhtsa import (
+from slp_mvp.cache import DiskCache
+from slp_mvp.nhtsa import (
     decode_vin,
     fetch_complaints_by_vehicle,
     fetch_recalls_by_vehicle,
     NHTSAError,
 )
-from vehicle_defect_mvp.analytics import (
+from slp_mvp.analytics import (
     complaints_to_df,
     recalls_to_df,
     component_frequency,
     severity_summary,
     complaints_time_series,
 )
-from vehicle_defect_mvp.enrich import enrich_complaints_df
-from vehicle_defect_mvp.text_search import build_index, search as search_index
+from slp_mvp.enrich import enrich_complaints_df
+from slp_mvp.text_search import build_index, search as search_index
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
