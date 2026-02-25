@@ -10,22 +10,22 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
-from vehicle_defect_mvp.cache import DiskCache
-from vehicle_defect_mvp.nhtsa import (
+from slp_mvp.cache import DiskCache
+from slp_mvp.nhtsa import (
     decode_vin,
     fetch_complaints_by_vehicle,
     fetch_recalls_by_vehicle,
     NHTSAError,
 )
-from vehicle_defect_mvp.analytics import (
+from slp_mvp.analytics import (
     complaints_to_df,
     recalls_to_df,
     component_frequency,
     severity_summary,
     complaints_time_series,
 )
-from vehicle_defect_mvp.enrich import enrich_complaints_df
-from vehicle_defect_mvp.text_search import build_index, search as search_index
+from slp_mvp.enrich import enrich_complaints_df
+from slp_mvp.text_search import build_index, search as search_index
 
 
 @st.cache_data(ttl=7 * 24 * 3600)
@@ -208,7 +208,7 @@ def _candidate_models(make: str, model: str, year: int) -> list[str]:
 
 
 st.set_page_config(
-    page_title="Vehicle Defect Assessment Tool",
+    page_title="Strategic Legal Practices  |  Vehicle Defect Assessment Tool",
     layout="wide",
 )
 
@@ -266,7 +266,7 @@ st.markdown(
     }
 
     /* ---- Simple section headings (no anchor icons) ---- */
-    .vda-section-title {
+    .slp-section-title {
         font-size: 1.15rem;
         font-weight: 600;
         margin: 0 0 0.5rem 0;
@@ -283,7 +283,7 @@ st.markdown(
         flex-direction: column;
         height: 100%;
     }
-    section[data-testid="stSidebar"] .vda-sidebar-footer {
+    section[data-testid="stSidebar"] .slp-sidebar-footer {
         margin-top: auto;
         padding: 0.75rem 0 0.5rem 0;
         font-size: 0.85rem;
@@ -294,40 +294,40 @@ st.markdown(
     }
 
     /* ---- Recalls table (always-visible horizontal scrollbar) ---- */
-    .vda-recalls-scroll {
+    .slp-recalls-scroll {
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-gutter: stable;
         padding-bottom: 6px; /* keeps bar from feeling clipped */
     }
-    .vda-recalls-scroll table {
+    .slp-recalls-scroll table {
         border-collapse: collapse;
         width: max-content;
         min-width: 100%;
     }
-    .vda-recalls-scroll th,
-    .vda-recalls-scroll td {
+    .slp-recalls-scroll th,
+    .slp-recalls-scroll td {
         padding: 0.35rem 0.55rem;
         border-bottom: 1px solid rgba(107, 114, 128, 0.25);
         white-space: nowrap;
         vertical-align: top;
         font-size: 0.9rem;
     }
-    .vda-recalls-scroll th {
+    .slp-recalls-scroll th {
         font-weight: 600;
         background: rgba(107, 114, 128, 0.08);
         position: sticky;
         top: 0;
         z-index: 1;
     }
-    .vda-recalls-scroll *::-webkit-scrollbar {
+    .slp-recalls-scroll *::-webkit-scrollbar {
         height: 14px;
     }
-    .vda-recalls-scroll *::-webkit-scrollbar-thumb {
+    .slp-recalls-scroll *::-webkit-scrollbar-thumb {
         background: rgba(107, 114, 128, 0.55);
         border-radius: 999px;
     }
-    .vda-recalls-scroll *::-webkit-scrollbar-track {
+    .slp-recalls-scroll *::-webkit-scrollbar-track {
         background: rgba(107, 114, 128, 0.15);
     }
     </style>
@@ -342,13 +342,13 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 0.5rem;
     ">
-        Vehicle Defect Assessment Tool
+        Strategic Legal Practices  |  Vehicle Defect Assessment Tool
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-DEFAULT_CACHE_DIR = os.environ.get("VDA_CACHE_DIR", ".cache")
+DEFAULT_CACHE_DIR = os.environ.get("SLP_CACHE_DIR", ".cache")
 cache = DiskCache(DEFAULT_CACHE_DIR)
 
 
@@ -457,15 +457,15 @@ with st.sidebar:
         analyze_clicked = st.button("Analyze vehicle", type="primary")
 
     st.markdown(
-        '<div class="vda-sidebar-footer">Made by Eric Gusdorf</div>',
+        '<div class="slp-sidebar-footer">Created by Eric Gusdorf - Jr. Data Engineer Applicant</div>',
         unsafe_allow_html=True,
     )
 
 # Enrichment always on (no UI toggle)
 enrich = True
 
-ENRICH_LIMIT = int(os.environ.get("VDA_ENRICH_LIMIT", "120"))
-ENRICH_WORKERS = int(os.environ.get("VDA_ENRICH_WORKERS", "6"))
+ENRICH_LIMIT = int(os.environ.get("SLP_ENRICH_LIMIT", "120"))
+ENRICH_WORKERS = int(os.environ.get("SLP_ENRICH_WORKERS", "6"))
 
 
 def _set_analysis_error(message: str, details: Optional[str] = None) -> None:
@@ -719,7 +719,7 @@ if "analysis_vehicle" in st.session_state:
     with tabs[0]:
         left, right = st.columns([1, 1])
         with left:
-            st.markdown('<div class="vda-section-title">Defect patterns</div>', unsafe_allow_html=True)
+            st.markdown('<div class="slp-section-title">Defect patterns</div>', unsafe_allow_html=True)
             comp_df = component_frequency(complaints_df)
             if comp_df.empty:
                 st.info("No complaint component labels returned for this vehicle.")
@@ -751,7 +751,7 @@ if "analysis_vehicle" in st.session_state:
                 st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         with right:
-            st.markdown('<div class="vda-section-title">Recalls</div>', unsafe_allow_html=True)
+            st.markdown('<div class="slp-section-title">Recalls</div>', unsafe_allow_html=True)
             if recalls_df is None or recalls_df.empty:
                 st.info("No recalls returned by NHTSA.")
             else:
@@ -771,7 +771,7 @@ if "analysis_vehicle" in st.session_state:
                 recalls_html = recalls_display.head(50).to_html(index=False, escape=True)
                 components.html(
                     f"""
-                    <div id="vda-recalls-container" style="width: 100%;">
+                    <div id="slp-recalls-container" style="width: 100%;">
                       <style>
                         :root {{
                           --track: rgba(96, 165, 250, 0.22);        /* lighter blue */
@@ -785,26 +785,26 @@ if "analysis_vehicle" in st.session_state:
                           --text-muted: rgba(29, 78, 216, 0.95);     /* blue-700-ish */
                         }}
 
-                        #vda-recalls-scroll {{
+                        #slp-recalls-scroll {{
                           overflow-x: scroll;   /* force scroll container */
                           overflow-y: auto;     /* allow vertical scrolling when many rows */
                           max-height: 360px;    /* prevents iframe cropping */
                           width: 100%;
                           scrollbar-width: none; /* hide native scrollbar (Firefox) */
                         }}
-                        #vda-recalls-scroll::-webkit-scrollbar {{
+                        #slp-recalls-scroll::-webkit-scrollbar {{
                           height: 0px;          /* hide native scrollbar (WebKit) */
                         }}
 
-                        #vda-recalls-scroll table {{
+                        #slp-recalls-scroll table {{
                           border-collapse: collapse;
                           width: max-content;
                           min-width: 100%;
                           font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
                           font-size: 0.9rem;
                         }}
-                        #vda-recalls-scroll th,
-                        #vda-recalls-scroll td {{
+                        #slp-recalls-scroll th,
+                        #slp-recalls-scroll td {{
                           padding: 0.35rem 0.55rem;
                           border-bottom: 1px solid var(--border);
                           white-space: nowrap;
@@ -813,7 +813,7 @@ if "analysis_vehicle" in st.session_state:
                           color: var(--text);
                           background: var(--cell);
                         }}
-                        #vda-recalls-scroll th {{
+                        #slp-recalls-scroll th {{
                           font-weight: 600;
                           background: var(--header) !important;
                           position: sticky;
@@ -821,12 +821,12 @@ if "analysis_vehicle" in st.session_state:
                           z-index: 1;
                           color: var(--text-muted);
                         }}
-                        #vda-recalls-scroll tbody tr:nth-child(even) td {{
+                        #slp-recalls-scroll tbody tr:nth-child(even) td {{
                           background: var(--row-alt);
                         }}
 
                         /* Always-visible custom scrollbar */
-                        #vda-recalls-bar {{
+                        #slp-recalls-bar {{
                           height: 14px;
                           background: var(--track);
                           border-radius: 999px;
@@ -835,7 +835,7 @@ if "analysis_vehicle" in st.session_state:
                           user-select: none;
                           touch-action: none;
                         }}
-                        #vda-recalls-thumb {{
+                        #slp-recalls-thumb {{
                           height: 14px;
                           background: var(--thumb);
                           border-radius: 999px;
@@ -846,21 +846,21 @@ if "analysis_vehicle" in st.session_state:
                           top: 0;
                           cursor: pointer;
                         }}
-                        #vda-recalls-thumb:hover {{
+                        #slp-recalls-thumb:hover {{
                           background: var(--thumb-hover);
                         }}
                       </style>
 
-                      <div id="vda-recalls-scroll">{recalls_html}</div>
-                      <div id="vda-recalls-bar" aria-label="Horizontal scroll bar">
-                        <div id="vda-recalls-thumb" aria-label="Scroll thumb"></div>
+                      <div id="slp-recalls-scroll">{recalls_html}</div>
+                      <div id="slp-recalls-bar" aria-label="Horizontal scroll bar">
+                        <div id="slp-recalls-thumb" aria-label="Scroll thumb"></div>
                       </div>
                     </div>
 
                     <script>
-                      const scrollEl = document.getElementById("vda-recalls-scroll");
-                      const barEl = document.getElementById("vda-recalls-bar");
-                      const thumbEl = document.getElementById("vda-recalls-thumb");
+                      const scrollEl = document.getElementById("slp-recalls-scroll");
+                      const barEl = document.getElementById("slp-recalls-bar");
+                      const thumbEl = document.getElementById("slp-recalls-thumb");
 
                       function clamp(v, min, max) {{
                         return Math.max(min, Math.min(max, v));
