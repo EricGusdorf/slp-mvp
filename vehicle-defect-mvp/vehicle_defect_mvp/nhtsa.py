@@ -34,7 +34,7 @@ def _clean_make_model(s: str) -> str:
 )
 def _http_get_json(url: str, timeout: int = 20) -> Any:
     headers = {
-        "User-Agent": "slp-vehicle-defect-mvp/1.0",
+        "User-Agent": "vehicle-defect-mvp/1.0",
         "Accept": "application/json",
     }
 

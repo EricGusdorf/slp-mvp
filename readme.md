@@ -1,8 +1,6 @@
-Created by Eric Gusdorf
+Made by Eric Gusdorf
 
-https://eg-slp-mvp.streamlit.app/
-
-# SLP Vehicle Defect Analyzer — MVP
+# Vehicle Defect Assessment Tool — MVP
 
 A working prototype that helps attorneys quickly assess **vehicle defect patterns** and **case strength** using public NHTSA data (recalls + consumer complaints).
 
@@ -31,7 +29,7 @@ pip install -r requirements.txt
 
 ### 3) Run the app
 ```bash
-streamlit run slp-vehicle-defect-mvp/app.py
+streamlit run vehicle-defect-mvp/app.py
 ```
 
 The app will open in your browser (default `http://localhost:8501`).
@@ -87,11 +85,11 @@ VINs are decoded with the vPIC API:
 ```
 app.py (UI)
   |
-  +-- slp_mvp/nhtsa.py       (NHTSA + vPIC API calls)
-  +-- slp_mvp/cache.py       (disk JSON cache; URL-keyed)
-  +-- slp_mvp/enrich.py      (parallel enrichment using safetyIssues/byNhtsaId)
-  +-- slp_mvp/analytics.py   (dataframes, component frequency, trends)
-  +-- slp_mvp/text_search.py (TF‑IDF search index)
+  +-- vehicle_defect_mvp/nhtsa.py       (NHTSA + vPIC API calls)
+  +-- vehicle_defect_mvp/cache.py       (disk JSON cache; URL-keyed)
+  +-- vehicle_defect_mvp/enrich.py      (parallel enrichment using safetyIssues/byNhtsaId)
+  +-- vehicle_defect_mvp/analytics.py   (dataframes, component frequency, trends)
+  +-- vehicle_defect_mvp/text_search.py (TF‑IDF search index)
 ```
 
 ### Caching
@@ -99,7 +97,7 @@ API responses are cached on disk in `.cache/` keyed by URL (SHA‑256 hash). Thi
 
 You can change the cache directory:
 ```bash
-export SLP_CACHE_DIR=/tmp/slp_cache
+export VDA_CACHE_DIR=/tmp/vehicle_defect_cache
 ```
 
 ---
